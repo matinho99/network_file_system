@@ -1,6 +1,13 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "mynfs_utility.h"
 /*
 int mynfs_open(char *host, char *path, int flags, int mode);
