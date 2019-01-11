@@ -3,8 +3,14 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "client.h"
 
+
+void help() {
+	printf("todo\n");
+}
 
 int main(int argc, char *argv[])
 {
@@ -12,6 +18,8 @@ int main(int argc, char *argv[])
   struct sockaddr_in server;
   struct hostent *hp, *gethostbyname();
   char buf[1024];
+  
+  char* hname = argv[1];
 
   /* Create socket */
   sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -22,10 +30,10 @@ int main(int argc, char *argv[])
 
   /* Get the IP address from hostname */
   server.sin_family = AF_INET;
-  hp = gethostbyname(argv[1]);
+  hp = gethostbyname(hname);
 
   if(hp == (struct hostent *) 0) {
-    fprintf(stderr, "%s: unknown host\n", argv[1]);
+    fprintf(stderr, "%s: unknown host\n", hname);
     exit(2);
   }
 
@@ -37,11 +45,48 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
+  printf("Type \"help\" to list available commands\n");
+  
   /* main loop */
   while(1) {
-    break;
+	int n = 64, c;
+	char *str, getstr[n], *com, *arg, *tmp, *end;
+    str = fgets(getstr, n, stdin);
+	// if(str == NULL)
+	
+	str = strtok(str, "\n");
+	com = strtok(str, " ");
+	
+	arg = strtok(NULL, " ");
+	
+	int res;
+	
+	if(com == "help")
+	  help();
+    if(com == "mynfs_open")
+	  res = mynfs_open(arg);
+	if(com == "mynfs_read")
+	  res = mynfs_read();
+    if(com == "mynfs_write")
+	  res = mynfs_write(arg);
+    if(com == "mynfs_lseek")
+	  res = mynfs_lseek(arg);
+    if(com == "mynfs_close")
+	  res = mynfs_close();
+    if(com == "mynfs_unlink")
+	  res = mynfs_unlink(arg);
+    if(com == "mynfs_opendir")
+	  res = mynfs_opendir(arg);
+    if(com == "mynfs_readdir")
+	  res = mynfs_readdir();
+    if(com == "mynfs_closedir")
+	  res = mynfs_closedir();
+    if(com == "mynfs_fstat")
+	  res = mynfs_fstat();
+    if(com == "close")
+	  break;
   }
-
+  
   close(sock);
   exit(0);
 }
