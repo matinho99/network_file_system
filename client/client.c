@@ -13,3 +13,53 @@ void help() {
   printf("mynfs_closedir\n");
   printf("mynfs_fstat\n");
 }
+
+int mynfs_open(char *arg) {
+  printf("mynfs_open");
+  return 1;
+}
+
+int mynfs_close() {
+  printf("mynfs_close");
+  return 1;
+}
+
+int mynfs_read() {
+  printf("mynfs_read");
+  return 1;
+}
+
+int mynfs_write(char *arg) {
+  printf("mynfs_write");
+  return 1;
+}
+
+int mynfs_lseek(char *arg) {
+  printf("mynfs_lseek");
+  return 1;
+}
+
+int mynfs_unlink(char *arg) {
+  printf("mynfs_unlink");
+  return 1;
+}
+
+int mynfs_opendir(char *arg) {
+  printf("mynfs_opendir");
+  return 1;
+}
+
+int mynfs_closedir() {
+  printf("mynfs_closed");
+  return 1;
+}
+
+int mynfs_readdir() {
+  printf("mynfs_readdir");
+  return 1;
+}
+
+int mynfs_fstat() {
+  printf("mynfs_fstat");
+  return 1;
+}

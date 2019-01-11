@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
   char* hname = argv[1];
 
   /* Create socket */
-  sock = socket(AF_INET, SOCK_STREAM, 0);
+  /*sock = socket(AF_INET, SOCK_STREAM, 0);
   if(sock == -1) {
     perror("opening stream socket");
     exit(1);
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
   /* main loop */
   while(1) {
 	int n = 64, c;
-	char *str, getstr[n], *com, *arg, *tmp, *end;
+	char *str, getstr[n], *com, *arg;
     str = fgets(getstr, n, stdin);
 	// if(str == NULL)
 	
@@ -51,29 +51,29 @@ int main(int argc, char *argv[])
 	
 	int res;
 	
-	if(com == "help")
+    if(!strcmp(com, "help"))
 	  help();
-    if(com == "mynfs_open")
+    if(!strcmp(com, "mynfs_open"))
 	  res = mynfs_open(arg);
-	if(com == "mynfs_read")
+    if(!strcmp(com, "mynfs_read"))
 	  res = mynfs_read();
-    if(com == "mynfs_write")
+    if(!strcmp(com, "mynfs_write"))
 	  res = mynfs_write(arg);
-    if(com == "mynfs_lseek")
+    if(!strcmp(com, "mynfs_lseek"))
 	  res = mynfs_lseek(arg);
-    if(com == "mynfs_close")
+    if(!strcmp(com, "mynfs_close"))
 	  res = mynfs_close();
-    if(com == "mynfs_unlink")
+    if(!strcmp(com, "mynfs_unlink"))
 	  res = mynfs_unlink(arg);
-    if(com == "mynfs_opendir")
+    if(!strcmp(com, "mynfs_opendir"))
 	  res = mynfs_opendir(arg);
-    if(com == "mynfs_readdir")
+    if(!strcmp(com, "mynfs_readdir"))
 	  res = mynfs_readdir();
-    if(com == "mynfs_closedir")
+    if(!strcmp(com, "mynfs_closedir"))
 	  res = mynfs_closedir();
-    if(com == "mynfs_fstat")
+    if(!strcmp(com, "mynfs_fstat"))
 	  res = mynfs_fstat();
-    if(com == "close")
+    if(!strcmp(com, "close"))
 	  break;
   }
   
