@@ -1,10 +1,5 @@
 #include "client.h"
 
-
-void help() {
-	printf("todo\n");
-}
-
 int main(int argc, char *argv[])
 {
   int sock;
@@ -49,8 +44,10 @@ int main(int argc, char *argv[])
 	
 	str = strtok(str, "\n");
 	com = strtok(str, " ");
-	
-	arg = strtok(NULL, " ");
+	if(com == NULL)
+	  com = str;
+    else
+	  arg = strtok(NULL, " ");
 	
 	int res;
 	
