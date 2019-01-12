@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
   char* hname = argv[1];
 
   /* Create socket */
-  /*sock = socket(AF_INET, SOCK_STREAM, 0);
+  sock = socket(AF_INET, SOCK_STREAM, 0);
   if(sock == -1) {
     perror("opening stream socket");
     exit(1);
