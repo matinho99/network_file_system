@@ -1,7 +1,7 @@
 #include "server.h"
 
 int main(int argc, char **argv) {
-  init_server_socket();
+  load_client_accesses();
   server_exec();
   return 0;
 }

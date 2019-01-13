@@ -40,26 +40,66 @@ int mynfs_fstat(int fd) {
   printf("mynfs_fstat %d\n", fd);
 }
 
-void decode_message(char *message) {
-  
-}
+void exec_operation(char *message, struct client_info ci) {
+/*  char *op = strtok(message, " ");
 
-void init_server_socket() {
-  struct sockaddr_in addr;
+  if(!strcmp(op, "mynfs_open")) {
+    char *filepath = strtok(NULL, " ");
+    int mode = atoi(strtok(NULL, " "));
+    int flags = atoi(strtok(NULL, " "));
 
-  if((server_sock = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-    perror("server_socket creation failed");
-    exit(0);
-  }
+    if(has_access_to_file(ci, filepath)) {
+      mynfs_open(ci, filepath, mode, flags);
+    }
+  } else if(!strcmp(op, "mynfs_close")) {
+    int fd = atoi(strtok(NULL, " "));
 
-  addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = INADDR_ANY;
-  addr.sin_port = htons(PORT);
+    if(has_opened_file(ci, fd)) {
+      int res;
+      mynfs_close(fd);
+    }
+  } else if(!strcmp(op, "mynfs_read")) {
+    int fd = atoi(strtok(NULL, " "));
 
-  if(bind(server_sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-    perror("server socket bind failed");
-    exit(0);
-  }
+    if(has_opened_file(ci, fd)) {
+      int res;
+      mynfs_read(fd);
+    }
+  } else if(!strcmp(op, "mynfs_write")) {
+    int fd = atoi(strtok(NULL, " "));
+
+    if(has_opened_file(ci, fd)) {
+      int res;
+      mynfs_write(fd);
+    }
+  } else if(!strcmp(op, "mynfs_lseek")) {
+    int fd = atoi(strtok(NULL, " "));
+
+    if(has_opened_file(ci, fd)) {
+      int res;
+      mynfs_close(fd);
+    }
+  } else if(!strcmp(op, "mynfs_unlink")) {
+    int fd = atoi(strtok(NULL, " "));
+
+    if(has_opened_file(ci, fd)) {
+      int res;
+      mynfs_close(fd);
+    }
+  } else if(!strcmp(op, "mynfs_fstat")) {
+    int fd = atoi(strtok(NULL, " "));
+
+    if(has_opened_file(ci, fd)) {
+      int res;
+      mynfs_close(fd);
+    }
+  } else if(!strcmp(op, "mynfs_opendir")) {
+
+  } else if(!strcmp(op, "mynfs_closedir")) {
+
+  } else if(!strcmp(op, "mynfs_readdir")) {
+
+  }*/
 }
 
 void server_exec() {
@@ -68,11 +108,13 @@ void server_exec() {
   struct sockaddr_in addr;
   fd_set readfds;
   addrlen = sizeof addr;
+  init_server_socket(&server_sock);
+  printf("after init\n");
   listen(server_sock, 5);
   max_sock = server_sock;
 
   for(i = 0; i < MAX_CLIENTS; i++) {
-    client_sockets[i] = 0;
+    client_sockets[i].sock = 0;
   }
 
   while(1) {
@@ -80,11 +122,11 @@ void server_exec() {
     FD_SET(server_sock, &readfds);
 
     for(i = 0; i<MAX_CLIENTS; i++) {
-      if(client_sockets[i] > 0)   
-        FD_SET(client_sockets[i], &readfds);   
+      if(client_sockets[i].sock > 0)   
+        FD_SET(client_sockets[i].sock, &readfds);   
                  
-      if(client_sockets[i] > max_sock)   
-        max_sock = client_sockets[i];   
+      if(client_sockets[i].sock > max_sock)   
+        max_sock = client_sockets[i].sock;   
     }
 
     if(select(max_sock+1, &readfds, NULL, NULL, NULL) < 0) {
@@ -99,27 +141,28 @@ void server_exec() {
         exit(0); 
       }
 
-      printf("host connected on sock %d; client IP: %s\n", new_sock, inet_ntoa(addr.sin_addr));
-      num_clients_connected++;
-
       for(i = 0; i < MAX_CLIENTS; i++) {   
-        if(client_sockets[i] == 0) {
-          client_sockets[i] = new_sock;
+        if(client_sockets[i].sock == 0) {
+          client_sockets[i].sock = new_sock;
+	  strcpy(client_sockets[i].ip, inet_ntoa(addr.sin_addr));
+	  printf("host connected on sock %d; client IP: %s\n", client_sockets[i].sock, client_sockets[i].ip);
           break;
         }   
       }
+
+      num_clients_connected++;
     }
 
     for(i = 0; i < MAX_CLIENTS; i++) {
-      int sock = client_sockets[i];
+      int sock = client_sockets[i].sock;
 
       if(FD_ISSET(sock, &readfds)) {
         int num_bytes_read = read(sock, buffer, sizeof(buffer));
+
         if(num_bytes_read > 0) {
 	  printf("message received: %s\n", buffer);
-	  decode_message(buffer);
-	  char *success = "OK";
-	  write(sock, success, sizeof success);
+	  //exec_operation(buffer);
+	  send_success(client_sockets[i]);
 	  char *buffer_parts = strtok(buffer, " ");
 
 	  while(buffer_parts != NULL) {
@@ -128,8 +171,7 @@ void server_exec() {
 	  }
         } else if(num_bytes_read == 0) {
           printf("host disconnected\n");
-          //send_success(sock);
-	  client_sockets[i] = 0;
+	  client_sockets[i].sock = 0;
           close(sock);
 
           if(num_clients_connected == 1) {
