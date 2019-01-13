@@ -32,7 +32,7 @@ struct mynfs_access_array {
 struct mynfs_opened_file {
   int file_descriptor;
   char client_ip[20];
-  int access_level;
+  int mode;
 };
 
 struct mynfs_opened_file_array {
@@ -59,13 +59,17 @@ void init_server_socket(int *server_sock);
 
 void load_client_accesses();
 
-int has_access_to_file(struct client_info ci, char *fp, int mode);
-
 int has_access_to_dir(struct client_info ci, char *dp);
+
+int has_access_to_file(struct client_info ci, char *fp, int mode);
 
 int has_opened_file(struct client_info ci, int fd);
 
 int has_opened_dir(struct client_info ci, int dd);
+
+int has_read_access(struct client_info ci, int fd);
+
+int has_write_access(struct client_info ci, int fd);
 
 void send_success(struct client_info ci);
 

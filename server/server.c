@@ -1,7 +1,7 @@
 #include "server.h"
 
-int mynfs_open(char *host, char *path, int flags, int mode) {
-  printf("mynfs_open %s %s %d %d\n", host, path, flags, mode);
+int mynfs_open(struct client_info ci, char *path, int flags, int mode) {
+  printf("mynfs_open %s %s %d %d\n", ci.ip, path, flags, mode);
 }
 
 int mynfs_close(int fd) {
@@ -24,8 +24,12 @@ int mynfs_unlink(int fd) {
   printf("mynfs_unlink %d\n", fd);
 }
 
-int mynfs_opendir(char *host, char *path) {
-  printf("mynfs_opendir %s %s\n", host, path);
+int mynfs_fstat(int fd) {
+  printf("mynfs_fstat %d\n", fd);
+}
+
+int mynfs_opendir(struct client_info ci, char *path) {
+  printf("mynfs_opendir %s %s\n", ci.ip, path);
 }
 
 int mynfs_closedir(int dirfd) {
@@ -36,19 +40,16 @@ int mynfs_readdir(int dirfd) {
   printf("mynfs_readdir %d\n", dirfd);
 }
 
-int mynfs_fstat(int fd) {
-  printf("mynfs_fstat %d\n", fd);
-}
-
 void exec_operation(char *message, struct client_info ci) {
-/*  char *op = strtok(message, " ");
+  char *op = strtok(message, " ");
 
   if(!strcmp(op, "mynfs_open")) {
     char *filepath = strtok(NULL, " ");
     int mode = atoi(strtok(NULL, " "));
     int flags = atoi(strtok(NULL, " "));
 
-    if(has_access_to_file(ci, filepath)) {
+    if(has_access_to_file(ci, filepath, mode)) {
+      printf("access granted\n");
       mynfs_open(ci, filepath, mode, flags);
     }
   } else if(!strcmp(op, "mynfs_close")) {
@@ -56,21 +57,21 @@ void exec_operation(char *message, struct client_info ci) {
 
     if(has_opened_file(ci, fd)) {
       int res;
-      mynfs_close(fd);
+      if((res = mynfs_close(fd)) == 0) {};
     }
   } else if(!strcmp(op, "mynfs_read")) {
     int fd = atoi(strtok(NULL, " "));
 
-    if(has_opened_file(ci, fd)) {
+    if(has_opened_file(ci, fd) && has_read_access(ci, fd)) {
       int res;
-      mynfs_read(fd);
+      //mynfs_read(fd);
     }
   } else if(!strcmp(op, "mynfs_write")) {
     int fd = atoi(strtok(NULL, " "));
 
-    if(has_opened_file(ci, fd)) {
+    if(has_opened_file(ci, fd) && has_read_access(ci, fd)) {
       int res;
-      mynfs_write(fd);
+      //mynfs_write(fd);
     }
   } else if(!strcmp(op, "mynfs_lseek")) {
     int fd = atoi(strtok(NULL, " "));
@@ -82,7 +83,7 @@ void exec_operation(char *message, struct client_info ci) {
   } else if(!strcmp(op, "mynfs_unlink")) {
     int fd = atoi(strtok(NULL, " "));
 
-    if(has_opened_file(ci, fd)) {
+    if(has_opened_file(ci, fd) && has_write_access(ci, fd)) {
       int res;
       mynfs_close(fd);
     }
@@ -94,12 +95,24 @@ void exec_operation(char *message, struct client_info ci) {
       mynfs_close(fd);
     }
   } else if(!strcmp(op, "mynfs_opendir")) {
+    char *dirpath = strtok(NULL, " ");
 
+    if(has_access_to_dir(ci, dirpath)) {
+      mynfs_opendir(ci, dirpath);
+    }
   } else if(!strcmp(op, "mynfs_closedir")) {
+    int dd = atoi(strtok(NULL, " "));
 
+    if(has_opened_dir(ci, dd)) {
+      mynfs_closedir(dd);
+    }
   } else if(!strcmp(op, "mynfs_readdir")) {
+    int dd = atoi(strtok(NULL, " "));
 
-  }*/
+    if(has_opened_dir(ci, dd)) {
+      mynfs_readdir(dd);
+    }
+  }
 }
 
 void server_exec() {
@@ -109,13 +122,9 @@ void server_exec() {
   fd_set readfds;
   addrlen = sizeof addr;
   init_server_socket(&server_sock);
-  printf("after init\n");
+  load_client_accesses();
   listen(server_sock, 5);
   max_sock = server_sock;
-
-  for(i = 0; i < MAX_CLIENTS; i++) {
-    client_sockets[i].sock = 0;
-  }
 
   while(1) {
     FD_ZERO(&readfds);     
@@ -161,14 +170,8 @@ void server_exec() {
 
         if(num_bytes_read > 0) {
 	  printf("message received: %s\n", buffer);
-	  //exec_operation(buffer);
+	  exec_operation(buffer, client_sockets[i]);
 	  send_success(client_sockets[i]);
-	  char *buffer_parts = strtok(buffer, " ");
-
-	  while(buffer_parts != NULL) {
-	    printf("%s\n", buffer_parts);
-	    buffer_parts = strtok(NULL, " ");
-	  }
         } else if(num_bytes_read == 0) {
           printf("host disconnected\n");
 	  client_sockets[i].sock = 0;

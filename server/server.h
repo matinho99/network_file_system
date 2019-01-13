@@ -6,7 +6,7 @@
 
 int server_sock;
 
-int mynfs_open(char *host, char *path, int flags, int mode);
+int mynfs_open(struct client_info ci, char *path, int flags, int mode);
 
 int mynfs_close(int fd);
 
@@ -20,7 +20,7 @@ int mynfs_unlink(int fd);
 
 int mynfs_fstat(int fd);
 
-int mynfs_opendir(char *host, char *path);
+int mynfs_opendir(struct client_info ci, char *path);
 
 int mynfs_closedir(int dirfd);
 

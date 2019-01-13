@@ -8,6 +8,9 @@ void init_server_socket(int *server_sock) {
     exit(0);
   }
 
+  if (setsockopt(*server_sock, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int)) < 0)
+    perror("setsockopt(SO_REUSEADDR) failed");
+
   addr.sin_family = AF_INET;
   addr.sin_addr.s_addr = INADDR_ANY;
   addr.sin_port = htons(PORT);
@@ -67,41 +70,11 @@ void load_client_accesses() {
   fclose(f);
 }
 
-int has_access_to_file(struct client_info ci, char *fp, int mode) {
-  int result = 0;
-  int i;
-
-  for(i = 0; i < client_accesses_arr.size; i++) {
-    if(!strcmp(client_accesses_arr.client_accesses[i].client_ip, ci.ip)) {
-      char *str = client_accesses_arr.client_accesses[i].path;
-      int j = 0;
-      result = 1;
-      
-      while(str[j]!='\0' && fp[j]!='\0') {
-        if(fp[j] != str[j]) {
-	  result = 0;
-          break;
-        }
-
-	j++;
-      }
-
-      if(result == 1) break;
-    }
-  }
-
-  if(mode != client_accesses_arr.client_accesses[i].mode) {
-    result = 0;
-  }
-
-  return result;
-}
-
 int has_access_to_dir(struct client_info ci, char *dp) {
   int result = 0;
-  int i;
+  int i = 0;
 
-  for(i = 0; i < client_accesses_arr.size; i++) {
+  while(i < client_accesses_arr.size) {
     if(!strcmp(client_accesses_arr.client_accesses[i].client_ip, ci.ip)) {
       char *str = client_accesses_arr.client_accesses[i].path;
       int j = 0;
@@ -118,6 +91,40 @@ int has_access_to_dir(struct client_info ci, char *dp) {
 
       if(result == 1) break;
     }
+
+    i++;
+  }
+
+  return result;
+}
+
+int has_access_to_file(struct client_info ci, char *fp, int mode) {
+  int result = 0;
+  int i = 0;
+
+  while(i < client_accesses_arr.size) {
+    if(!strcmp(client_accesses_arr.client_accesses[i].client_ip, ci.ip)) {
+      char *str = client_accesses_arr.client_accesses[i].path;
+      int j = 0;
+      result = 1;
+      
+      while(str[j]!='\0' && fp[j]!='\0') {
+        if(fp[j] != str[j]) {
+	  result = 0;
+          break;
+        }
+
+	j++;
+      }
+
+      if(result == 1) break;
+    }
+
+    i++;
+  }
+
+  if(client_accesses_arr.client_accesses[i].mode != O_RDWR && mode != client_accesses_arr.client_accesses[i].mode) {
+    result = 0;
   }
 
   return result;
@@ -151,6 +158,50 @@ int has_opened_dir(struct client_info ci, int dd) {
   }
 
   return result;
+}
+
+int has_read_access(struct client_info ci, int fd) {
+  int result = 0;
+  int i = 0;
+
+  while(i < opened_files_arr.num_opened_files) {
+    char *client_ip = opened_files_arr.opened_files[i].client_ip;
+
+    if(!strcmp(ci.ip, client_ip)) {
+      int mode = opened_files_arr.opened_files[i].mode;
+
+      if(mode == O_RDWR || mode == O_RDONLY) {
+	result = 1;
+	break;
+      }
+    }
+
+    i++;
+  }
+
+  return result;
+}
+
+int has_write_access(struct client_info ci, int fd) {
+  int result = 0;
+  int i = 0;
+
+  while(i < opened_files_arr.num_opened_files) {
+    char *client_ip = opened_files_arr.opened_files[i].client_ip;
+
+    if(!strcmp(ci.ip, client_ip)) {
+      int mode = opened_files_arr.opened_files[i].mode;
+
+      if(mode == O_RDWR || mode == O_WRONLY) {
+	result = 1;
+	break;
+      }
+    }
+
+    i++;
+  }
+
+  return result;  
 }
 
 void send_success(struct client_info ci) {
