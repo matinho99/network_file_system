@@ -25,10 +25,10 @@ void load_client_accesses() {
   int count = 0, len = 30, i;
   char c;
   char *buf = NULL;
-  FILE *f = fopen("accesses", "r");
+  FILE *f = fopen("/home/mosowiec/Workspace/network_file_system/server/accesses", "r");
   
   if(f == NULL) {
-    printf("could no open file\n");
+    printf("could not open file\n");
   }
 
   for (c = getc(f); c != EOF; c = getc(f)) 
@@ -42,19 +42,19 @@ void load_client_accesses() {
   i = 0;
 
   while(getline(&buf, (size_t *)&len, f) != -1) {
-    char *mode;
+    char *flags;
     printf("retrieved line: %s", buf);
     char *str = strtok(buf, "\n");
     strcpy(client_accesses_arr.client_accesses[i].client_ip, strtok(str, ";"));
     strcpy(client_accesses_arr.client_accesses[i].path, strtok(NULL, ";"));
-    mode = strtok(NULL, ";");
+    flags = strtok(NULL, ";");
 
-    if(!strcmp(mode, "r")) {
-      client_accesses_arr.client_accesses[i].mode = O_RDONLY;
-    } else if(!strcmp(mode, "w")) {
-      client_accesses_arr.client_accesses[i].mode = O_WRONLY;
-    } else if(!strcmp(mode, "rw")) {
-      client_accesses_arr.client_accesses[i].mode = O_RDWR;
+    if(!strcmp(flags, "r")) {
+      client_accesses_arr.client_accesses[i].flags = O_RDONLY;
+    } else if(!strcmp(flags, "w")) {
+      client_accesses_arr.client_accesses[i].flags = O_WRONLY;
+    } else if(!strcmp(flags, "rw")) {
+      client_accesses_arr.client_accesses[i].flags = O_RDWR;
     }
 
     client_accesses_arr.size++;
@@ -63,7 +63,7 @@ void load_client_accesses() {
 
   for(i=0; i<client_accesses_arr.size; i++) {
     printf("%s %s %d\n", client_accesses_arr.client_accesses[i].client_ip, 
-      client_accesses_arr.client_accesses[i].path, client_accesses_arr.client_accesses[i].mode);
+      client_accesses_arr.client_accesses[i].path, client_accesses_arr.client_accesses[i].flags);
   }
 
   if(buf != NULL) free(buf);
@@ -98,7 +98,7 @@ int has_access_to_dir(struct client_info ci, char *dp) {
   return result;
 }
 
-int has_access_to_file(struct client_info ci, char *fp, int mode) {
+int has_access_to_file(struct client_info ci, char *fp, int flags) {
   int result = 0;
   int i = 0;
 
@@ -123,7 +123,7 @@ int has_access_to_file(struct client_info ci, char *fp, int mode) {
     i++;
   }
 
-  if(client_accesses_arr.client_accesses[i].mode != O_RDWR && mode != client_accesses_arr.client_accesses[i].mode) {
+  if(client_accesses_arr.client_accesses[i].flags != O_RDWR && flags != client_accesses_arr.client_accesses[i].flags) {
     result = 0;
   }
 
@@ -136,6 +136,21 @@ int has_opened_file(struct client_info ci, int fd) {
 
   for(i = 0; i < opened_files_arr.num_opened_files; i++) {
     if(opened_files_arr.opened_files[i].file_descriptor == fd 
+      && !strcmp(opened_files_arr.opened_files[i].client_ip, ci.ip)) {
+      result = 1;
+      break;
+    }
+  }
+
+  return result;
+}
+
+int has_opened_file_by_path(struct client_info ci, char *path) {
+  int result = 0;
+  int i;
+
+  for(i = 0; i < opened_files_arr.num_opened_files; i++) {
+    if(!strcmp(opened_files_arr.opened_files[i].filepath, path) 
       && !strcmp(opened_files_arr.opened_files[i].client_ip, ci.ip)) {
       result = 1;
       break;
@@ -168,9 +183,9 @@ int has_read_access(struct client_info ci, int fd) {
     char *client_ip = opened_files_arr.opened_files[i].client_ip;
 
     if(!strcmp(ci.ip, client_ip)) {
-      int mode = opened_files_arr.opened_files[i].mode;
+      int flags = opened_files_arr.opened_files[i].flags;
 
-      if(mode == O_RDWR || mode == O_RDONLY) {
+      if(flags == O_RDWR || flags == O_RDONLY) {
 	result = 1;
 	break;
       }
@@ -190,9 +205,9 @@ int has_write_access(struct client_info ci, int fd) {
     char *client_ip = opened_files_arr.opened_files[i].client_ip;
 
     if(!strcmp(ci.ip, client_ip)) {
-      int mode = opened_files_arr.opened_files[i].mode;
+      int flags = opened_files_arr.opened_files[i].flags;
 
-      if(mode == O_RDWR || mode == O_WRONLY) {
+      if(flags == O_RDWR || flags == O_WRONLY) {
 	result = 1;
 	break;
       }
@@ -201,15 +216,65 @@ int has_write_access(struct client_info ci, int fd) {
     i++;
   }
 
-  return result;  
+  return result;
+}
+
+int add_opened_file(struct client_info ci, int fd, char *path, int flags) {
+  opened_files_arr.opened_files[opened_files_arr.num_opened_files].file_descriptor = fd;
+  strcpy(opened_files_arr.opened_files[opened_files_arr.num_opened_files].filepath, path);
+  strcpy(opened_files_arr.opened_files[opened_files_arr.num_opened_files].client_ip, ci.ip);
+  opened_files_arr.opened_files[opened_files_arr.num_opened_files].flags = flags;
+  opened_files_arr.num_opened_files++;
+}
+
+int remove_opened_file(struct client_info ci, int fd) {
+  int result = 0;
+  int i;
+
+  for(i = 0; i < opened_files_arr.num_opened_files; i++) {
+    if(opened_files_arr.opened_files[i].file_descriptor == fd 
+      && !strcmp(opened_files_arr.opened_files[i].client_ip, ci.ip)) {
+      opened_files_arr.opened_files[i].file_descriptor = 0;
+      strcpy(opened_files_arr.opened_files[i].client_ip, "");
+      opened_files_arr.opened_files[i].flags = -1;
+      
+      for(int j = i; j < opened_files_arr.num_opened_files-1; j++) {
+        opened_files_arr.opened_files[j].file_descriptor =
+          opened_files_arr.opened_files[j+1].file_descriptor;
+        strcpy(opened_files_arr.opened_files[j].client_ip,
+          opened_files_arr.opened_files[j+1].client_ip);
+	opened_files_arr.opened_files[j].flags = opened_files_arr.opened_files[j+1].flags;
+      }
+
+      opened_files_arr.num_opened_files--;
+      result = 1;
+      break;
+    }
+  }
+
+  return result;
 }
 
 void send_success(struct client_info ci) {
   char *success = "SUCCESS";
-  write(ci.sock, success, sizeof success);
+
+  if(write(ci.sock, success, sizeof success) == -1) {
+    perror("send_success failed");
+  }
 }
 
 void send_failure(struct client_info ci) {
   char *failure = "FAILURE";
-  write(ci.sock, failure, sizeof failure);
+
+  if(write(ci.sock, failure, sizeof failure) == -1) {
+    perror("send_failure failed");
+  }
+}
+
+void send_error(struct client_info ci) {
+  char *error = get_error();
+
+  if(write(ci.sock, error, sizeof error) == -1) {
+    perror("send_error failed");
+  }
 }

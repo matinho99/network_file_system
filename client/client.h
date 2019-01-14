@@ -8,28 +8,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 #include "mynfs_utility.h"
-/*
-int mynfs_open(char *host, char *path, int flags, int mode);
 
-int mynfs_close();
+int sock;
 
-int mynfs_read(int fd, void *buf, int size);
-
-int mynfs_write(int fd, void *buf, int size);
-
-int mynfs_lseek(int fd, int offset, int whence);
-
-int mynfs_unlink(int fd);
-
-int mynfs_opendir(char *host, char *path);
-
-int mynfs_closedir(int dirfd);
-
-int mynfs_readdir(int dirfd);
-
-int mynfs_fstat(int fd);
-*/
 void help();
 
 int mynfs_open(char *arg);
@@ -51,5 +35,9 @@ int mynfs_closedir();
 int mynfs_readdir();
 
 int mynfs_fstat();
+
+void init_client_socket(char *host, char *port);
+
+void client_exec();
 
 #endif
