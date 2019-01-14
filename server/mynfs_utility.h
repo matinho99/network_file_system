@@ -9,14 +9,24 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <dirent.h>
 #include <arpa/inet.h>
 
 #define PORT 8080
 #define MAX_CLIENTS 10
-#define O_RDONLY 100
-#define O_WRONLY 101
-#define O_RDWR 102
-#define O_CREAT 103
+#ifndef O_RDONLY
+# define O_RDONLY 00
+#endif
+#ifndef O_WRONLY
+# define O_WRONLY 01
+#endif
+#ifndef O_RDWR
+# define O_RDWR 02
+#endif
+#ifndef O_CREAT
+# define O_CREAT 0100
+#endif
 
 struct mynfs_access {
   char client_ip[20];
@@ -70,6 +80,8 @@ int has_opened_dir(struct client_info ci, int dd);
 int has_read_access(struct client_info ci, int fd);
 
 int has_write_access(struct client_info ci, int fd);
+
+int remove_from_opened_files_arr(struct client_info ci, int fd);
 
 void send_success(struct client_info ci);
 

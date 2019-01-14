@@ -2,14 +2,57 @@
 
 int mynfs_open(struct client_info ci, char *path, int flags, int mode) {
   printf("mynfs_open %s %s %d %d\n", ci.ip, path, flags, mode);
+
+  int fd;
+
+  /* check if file exists */
+  /*if(access(path, F_OK) != -1) {  // file exists
+    if(mode != 0)
+      access 
+  } else {  // file doesn't exist, O_CREAT flag
+    if(flags == O_CREAT)
+      
+  } */
+  if(mode != 0)
+    fd = open(path, flags, mode);
+  else
+    fd = open(path, flags);
+
+  if(fd == -1)
+    mynfs_error = 1;
+  else {
+    opened_files_arr.opened_files[opened_files_arr.num_opened_files].file_descriptor = fd;
+    strcpy(opened_files_arr.opened_files[opened_files_arr.num_opened_files].client_ip, ci.ip);
+    opened_files_arr.opened_files[opened_files_arr.num_opened_files].mode = flags;
+    opened_files_arr.num_opened_files++;
+  }
+  return fd;
 }
 
 int mynfs_close(int fd) {
   printf("mynfs_close %d\n", fd);
+/*
+  int result;
+  result = 0;
+
+  result = close(fd);
+*/
+/*
+  if(result != -1) {
+    if(remove_from_opened_files_arr(ci, fd))
+      result = 1;
+  }
+
+  if(result != 1)
+    mynfs_error = 2;
+*/
+ // return result;
 }
 
 int mynfs_read(int fd, void *buf, int size) {
   printf("mynfs_read %d buf %d\n", fd, size);
+
+  
 }
 
 int mynfs_write(int fd, void *buf, int size) {
@@ -30,10 +73,35 @@ int mynfs_fstat(int fd) {
 
 int mynfs_opendir(struct client_info ci, char *path) {
   printf("mynfs_opendir %s %s\n", ci.ip, path);
+
+  int dd;
+  DIR *pDir;  // might need to be global
+
+  dd = -1;
+  pDir = opendir(path);
+
+  if(pDir == NULL) {
+    dd = -1;
+  } else {
+    dd = dirfd(pDir);  // (?)
+  }
+
+  if(dd == -1)
+    mynfs_error = 1;
+  else {
+    opened_dirs_arr.opened_dirs[opened_dirs_arr.num_opened_dirs].dir_descriptor = dd;
+    strcpy(opened_dirs_arr.opened_dirs[opened_dirs_arr.num_opened_dirs].client_ip, ci.ip);
+    opened_dirs_arr.num_opened_dirs++;
+  }
+  return dd;
 }
 
 int mynfs_closedir(int dirfd) {
   printf("mynfs_closedir %d\n", dirfd);
+/*
+  int result;
+
+  result = closedir()*/
 }
 
 int mynfs_readdir(int dirfd) {
@@ -42,53 +110,57 @@ int mynfs_readdir(int dirfd) {
 
 void exec_operation(char *message, struct client_info ci) {
   char *op = strtok(message, " ");
+  int fd;
 
   if(!strcmp(op, "mynfs_open")) {
     char *filepath = strtok(NULL, " ");
-    int mode = atoi(strtok(NULL, " "));
     int flags = atoi(strtok(NULL, " "));
+    int mode = atoi(strtok(NULL, " "));
 
     if(has_access_to_file(ci, filepath, mode)) {
       printf("access granted\n");
-      mynfs_open(ci, filepath, mode, flags);
+      fd = mynfs_open(ci, filepath, mode, flags);
+    } else {
+      fd = 0;
     }
+    write(ci.sock, fd, 32);
   } else if(!strcmp(op, "mynfs_close")) {
-    int fd = atoi(strtok(NULL, " "));
+    fd = atoi(strtok(NULL, " "));
 
     if(has_opened_file(ci, fd)) {
       int res;
       if((res = mynfs_close(fd)) == 0) {};
     }
   } else if(!strcmp(op, "mynfs_read")) {
-    int fd = atoi(strtok(NULL, " "));
+    fd = atoi(strtok(NULL, " "));
 
     if(has_opened_file(ci, fd) && has_read_access(ci, fd)) {
       int res;
       //mynfs_read(fd);
     }
   } else if(!strcmp(op, "mynfs_write")) {
-    int fd = atoi(strtok(NULL, " "));
+    fd = atoi(strtok(NULL, " "));
 
     if(has_opened_file(ci, fd) && has_read_access(ci, fd)) {
       int res;
       //mynfs_write(fd);
     }
   } else if(!strcmp(op, "mynfs_lseek")) {
-    int fd = atoi(strtok(NULL, " "));
+    fd = atoi(strtok(NULL, " "));
 
     if(has_opened_file(ci, fd)) {
       int res;
       mynfs_close(fd);
     }
   } else if(!strcmp(op, "mynfs_unlink")) {
-    int fd = atoi(strtok(NULL, " "));
+    fd = atoi(strtok(NULL, " "));
 
     if(has_opened_file(ci, fd) && has_write_access(ci, fd)) {
       int res;
       mynfs_close(fd);
     }
   } else if(!strcmp(op, "mynfs_fstat")) {
-    int fd = atoi(strtok(NULL, " "));
+    fd = atoi(strtok(NULL, " "));
 
     if(has_opened_file(ci, fd)) {
       int res;
@@ -112,6 +184,9 @@ void exec_operation(char *message, struct client_info ci) {
     if(has_opened_dir(ci, dd)) {
       mynfs_readdir(dd);
     }
+  } else {
+    //send "wrong command" or sth
+    send_failure(ci);
   }
 }
 

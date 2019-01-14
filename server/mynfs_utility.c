@@ -28,7 +28,7 @@ void load_client_accesses() {
   FILE *f = fopen("accesses", "r");
   
   if(f == NULL) {
-    printf("could no open file\n");
+    printf("could not open file\n");
   }
 
   for (c = getc(f); c != EOF; c = getc(f)) 
@@ -201,7 +201,33 @@ int has_write_access(struct client_info ci, int fd) {
     i++;
   }
 
-  return result;  
+  return result;
+}
+
+int remove_from_opened_files_arr(struct client_info ci, int fd) {
+  int result = 0;
+  int i;
+
+  for(i = 0; i < opened_files_arr.num_opened_files; i++) {
+    if(opened_files_arr.opened_files[i].file_descriptor == fd 
+      && !strcmp(opened_files_arr.opened_files[i].client_ip, ci.ip)) {
+      opened_files_arr.opened_files[i].file_descriptor = 0;
+      strcpy(opened_files_arr.opened_files[i].client_ip, "");
+      /*for(int j = i; j < opened_files_arr.num_opened_files-1; j++) {
+        opened_files_arr.opened_files[j] = opened_files_arr.opened_files[j+1];
+      } */
+      for(int j = i; j < opened_files_arr.num_opened_files-1; j++) {
+        opened_files_arr.opened_files[j].file_descriptor =
+          opened_files_arr.opened_files[j+1].file_descriptor;
+        strcpy(opened_files_arr.opened_files[j].client_ip,
+          opened_files_arr.opened_files[j+1].client_ip);
+      }
+
+      opened_files_arr.num_opened_files--;
+      result = 1;
+      break;
+    }
+  }
 }
 
 void send_success(struct client_info ci) {
