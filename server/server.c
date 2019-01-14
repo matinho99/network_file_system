@@ -2,7 +2,6 @@
 
 int mynfs_open(struct client_info ci, char *path, int flags, int mode) {
   printf("mynfs_open %s %s %d %d\n", ci.ip, path, flags, mode);
-
   int fd;
 
   /* check if file exists */
@@ -13,46 +12,32 @@ int mynfs_open(struct client_info ci, char *path, int flags, int mode) {
     if(flags == O_CREAT)
       
   } */
-  if(mode != 0)
+  if(mode == O_CREAT)
     fd = open(path, flags, mode);
   else
     fd = open(path, flags);
 
   if(fd == -1)
     mynfs_error = 1;
-  else {
-    opened_files_arr.opened_files[opened_files_arr.num_opened_files].file_descriptor = fd;
-    strcpy(opened_files_arr.opened_files[opened_files_arr.num_opened_files].client_ip, ci.ip);
-    opened_files_arr.opened_files[opened_files_arr.num_opened_files].mode = flags;
-    opened_files_arr.num_opened_files++;
-  }
+
   return fd;
 }
 
 int mynfs_close(int fd) {
   printf("mynfs_close %d\n", fd);
-/*
   int result;
-  result = 0;
-
-  result = close(fd);
-*/
-/*
-  if(result != -1) {
-    if(remove_from_opened_files_arr(ci, fd))
-      result = 1;
+  
+  if((result = close(fd)) == -1) {
+    mynfs_error = 2;
   }
 
-  if(result != 1)
-    mynfs_error = 2;
-*/
- // return result;
+  return result;
 }
 
 int mynfs_read(int fd, void *buf, int size) {
   printf("mynfs_read %d buf %d\n", fd, size);
 
-  
+
 }
 
 int mynfs_write(int fd, void *buf, int size) {
@@ -73,10 +58,8 @@ int mynfs_fstat(int fd) {
 
 int mynfs_opendir(struct client_info ci, char *path) {
   printf("mynfs_opendir %s %s\n", ci.ip, path);
-
   int dd;
   DIR *pDir;  // might need to be global
-
   dd = -1;
   pDir = opendir(path);
 
@@ -93,15 +76,12 @@ int mynfs_opendir(struct client_info ci, char *path) {
     strcpy(opened_dirs_arr.opened_dirs[opened_dirs_arr.num_opened_dirs].client_ip, ci.ip);
     opened_dirs_arr.num_opened_dirs++;
   }
+
   return dd;
 }
 
 int mynfs_closedir(int dirfd) {
   printf("mynfs_closedir %d\n", dirfd);
-/*
-  int result;
-
-  result = closedir()*/
 }
 
 int mynfs_readdir(int dirfd) {
@@ -110,26 +90,30 @@ int mynfs_readdir(int dirfd) {
 
 void exec_operation(char *message, struct client_info ci) {
   char *op = strtok(message, " ");
-  int fd;
+  int fd = 0, dd;
 
   if(!strcmp(op, "mynfs_open")) {
     char *filepath = strtok(NULL, " ");
     int flags = atoi(strtok(NULL, " "));
     int mode = atoi(strtok(NULL, " "));
 
-    if(has_access_to_file(ci, filepath, mode)) {
-      printf("access granted\n");
-      fd = mynfs_open(ci, filepath, mode, flags);
-    } else {
-      fd = 0;
+    if(has_access_to_file(ci, filepath, flags) && !has_opened_file_by_path(ci, filepath)) {
+      //send_success
+      if((fd = mynfs_open(ci, filepath, flags, mode)) != -1) {
+        add_opened_file(ci, fd, filepath, flags);
+      }
+
+      printf("mynfs_open fd: %d", fd);
     }
-    write(ci.sock, fd, 32);
   } else if(!strcmp(op, "mynfs_close")) {
     fd = atoi(strtok(NULL, " "));
 
     if(has_opened_file(ci, fd)) {
       int res;
-      if((res = mynfs_close(fd)) == 0) {};
+
+      if((res = mynfs_close(fd)) != -1) {
+	remove_opened_file(ci, fd);
+      }
     }
   } else if(!strcmp(op, "mynfs_read")) {
     fd = atoi(strtok(NULL, " "));
@@ -170,22 +154,21 @@ void exec_operation(char *message, struct client_info ci) {
     char *dirpath = strtok(NULL, " ");
 
     if(has_access_to_dir(ci, dirpath)) {
-      mynfs_opendir(ci, dirpath);
+      dd = mynfs_opendir(ci, dirpath);
     }
   } else if(!strcmp(op, "mynfs_closedir")) {
-    int dd = atoi(strtok(NULL, " "));
+    dd = atoi(strtok(NULL, " "));
 
     if(has_opened_dir(ci, dd)) {
       mynfs_closedir(dd);
     }
   } else if(!strcmp(op, "mynfs_readdir")) {
-    int dd = atoi(strtok(NULL, " "));
+    dd = atoi(strtok(NULL, " "));
 
     if(has_opened_dir(ci, dd)) {
       mynfs_readdir(dd);
     }
   } else {
-    //send "wrong command" or sth
     send_failure(ci);
   }
 }
@@ -225,7 +208,7 @@ void server_exec() {
         exit(0); 
       }
 
-      for(i = 0; i < MAX_CLIENTS; i++) {   
+      for(i = 0; i < MAX_CLIENTS; i++) {
         if(client_sockets[i].sock == 0) {
           client_sockets[i].sock = new_sock;
 	  strcpy(client_sockets[i].ip, inet_ntoa(addr.sin_addr));
@@ -263,7 +246,18 @@ void server_exec() {
 
     printf("number of clients connected = %d\n", num_clients_connected);
     if(num_clients_connected == -1) break;
+
+    for(int i=0; i<opened_files_arr.num_opened_files; i++) {
+      printf("Opened file: %d %s %s %d; number of opened files: %d\n", opened_files_arr.opened_files[i].file_descriptor, opened_files_arr.opened_files[i].filepath, 
+        opened_files_arr.opened_files[i].client_ip, opened_files_arr.opened_files[i].flags, opened_files_arr.num_opened_files);
+    }
+
+    for(int i=0; i<opened_dirs_arr.num_opened_dirs; i++) {
+      printf("Opened dir: %d %s; number of opened files: %d\n", opened_dirs_arr.opened_dirs[i].dir_descriptor, opened_dirs_arr.opened_dirs[i].client_ip, 
+	opened_dirs_arr.num_opened_dirs);
+    }
   }
 
   close(server_sock);
+  if(client_accesses_arr.client_accesses != NULL) free(client_accesses_arr.client_accesses);
 }

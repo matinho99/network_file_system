@@ -12,26 +12,19 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <arpa/inet.h>
+#include "mynfs_error.h"
 
 #define PORT 8080
 #define MAX_CLIENTS 10
-#ifndef O_RDONLY
-# define O_RDONLY 00
-#endif
-#ifndef O_WRONLY
-# define O_WRONLY 01
-#endif
-#ifndef O_RDWR
-# define O_RDWR 02
-#endif
-#ifndef O_CREAT
-# define O_CREAT 0100
-#endif
+#define O_RDONLY 00
+#define O_WRONLY 01
+#define O_RDWR 02
+#define O_CREAT 0100
 
 struct mynfs_access {
   char client_ip[20];
   char path[50];
-  int mode;
+  int flags;
 };
 
 struct mynfs_access_array {
@@ -41,8 +34,9 @@ struct mynfs_access_array {
 
 struct mynfs_opened_file {
   int file_descriptor;
+  char filepath[50];
   char client_ip[20];
-  int mode;
+  int flags;
 };
 
 struct mynfs_opened_file_array {
@@ -75,16 +69,22 @@ int has_access_to_file(struct client_info ci, char *fp, int mode);
 
 int has_opened_file(struct client_info ci, int fd);
 
+int has_opened_file_by_path(struct client_info ci, char *path);
+
 int has_opened_dir(struct client_info ci, int dd);
 
 int has_read_access(struct client_info ci, int fd);
 
 int has_write_access(struct client_info ci, int fd);
 
-int remove_from_opened_files_arr(struct client_info ci, int fd);
+int add_opened_file(struct client_info ci, int fd, char *path, int flags);
+
+int remove_opened_file(struct client_info ci, int fd);
 
 void send_success(struct client_info ci);
 
 void send_failure(struct client_info ci);
+
+void send_error(struct client_info ci);
 
 #endif
