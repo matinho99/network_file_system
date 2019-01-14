@@ -19,20 +19,20 @@ int mynfs_open(char *arg) {
 send com+arg
 recv response
 */
-  char *com = "mynfs_open";
+  char com[50] = "mynfs_open ";
   char buf[1024];
-  write(sock, com, 32);
-  read(sock, buf, sizeof(buf));  // expecting success
-  write(sock, arg, 1024);
+  strcat(com, arg);
+  write(sock, com, 1024);
+//  read(sock, buf, sizeof(buf));  // expecting success
+//  write(sock, arg, 1024);
   printf("mynfs_open issued\n");
   return 1;
 }
 
-int mynfs_close() {
-/*
-send com
-recv response
-*/
+int mynfs_close(char *arg) {
+  char com[50] = "mynfs_close ";
+  strcat(com, arg);
+  write(sock, com, 1024);
   printf("mynfs_close issued\n");
   return 1;
 }
@@ -78,6 +78,10 @@ int mynfs_opendir(char *arg) {
 send com+arg
 recv response
 */
+  char com[50] = "mynfs_opendir ";
+  char buf[1024];
+  strcat(com, arg);
+  write(sock, com, 1024);
   printf("mynfs_opendir issued\n");
   return 1;
 }
@@ -173,7 +177,7 @@ void client_exec() {
     if(!strcmp(com, "mynfs_lseek"))
       res = mynfs_lseek(arg);
     if(!strcmp(com, "mynfs_close"))
-      res = mynfs_close();
+      res = mynfs_close(arg);
     if(!strcmp(com, "mynfs_unlink"))
       res = mynfs_unlink(arg);
     if(!strcmp(com, "mynfs_opendir"))
