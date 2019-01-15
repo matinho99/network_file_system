@@ -18,7 +18,7 @@ void help();
 
 int mynfs_open(char *arg);
 
-int mynfs_close();
+int mynfs_close(char *arg);
 
 int mynfs_read();
 
@@ -30,7 +30,7 @@ int mynfs_unlink(char *arg);
 
 int mynfs_opendir(char *arg);
 
-int mynfs_closedir();
+int mynfs_closedir(char *arg);
 
 int mynfs_readdir();
 

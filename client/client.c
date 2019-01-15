@@ -86,12 +86,16 @@ recv response
   return 1;
 }
 
-int mynfs_closedir() {
+int mynfs_closedir(char *arg) {
 /*
 send com
 recv response
 */
-  printf("mynfs_closed issued\n");
+  char com[50] = "mynfs_closedir ";
+  char buf[1024];
+  strcat(com, arg);
+  write(sock, com, 1024);
+  printf("mynfs_closedir issued\n");
   return 1;
 }
 
@@ -185,7 +189,7 @@ void client_exec() {
     if(!strcmp(com, "mynfs_readdir"))
       res = mynfs_readdir();
     if(!strcmp(com, "mynfs_closedir"))
-      res = mynfs_closedir();
+      res = mynfs_closedir(arg);
     if(!strcmp(com, "mynfs_fstat"))
       res = mynfs_fstat();
     if(!strcmp(com, "close"))
