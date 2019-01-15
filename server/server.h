@@ -22,9 +22,9 @@ int mynfs_fstat(int fd);
 
 int mynfs_opendir(struct client_info ci, char *path);
 
-int mynfs_closedir(int dirfd);
+int mynfs_closedir(int dd);
 
-int mynfs_readdir(int dirfd);
+int mynfs_readdir(int dd);
 
 void exec_operation(char *message, struct client_info ci);
 

@@ -70,6 +70,81 @@ void load_client_accesses() {
   fclose(f);
 }
 
+int add_opened_file(struct client_info ci, int fd, char *path, int flags) {
+  opened_files_arr.opened_files[opened_files_arr.num_opened_files].file_descriptor = fd;
+  strcpy(opened_files_arr.opened_files[opened_files_arr.num_opened_files].filepath, path);
+  strcpy(opened_files_arr.opened_files[opened_files_arr.num_opened_files].client_ip, ci.ip);
+  opened_files_arr.opened_files[opened_files_arr.num_opened_files].flags = flags;
+  opened_files_arr.num_opened_files++;
+}
+
+int remove_opened_file(struct client_info ci, int fd) {
+  int result = 0;
+  int i;
+
+  for(i = 0; i < opened_files_arr.num_opened_files; i++) {
+    if(opened_files_arr.opened_files[i].file_descriptor == fd 
+      && !strcmp(opened_files_arr.opened_files[i].client_ip, ci.ip)) {
+      opened_files_arr.opened_files[i].file_descriptor = 0;
+      strcpy(opened_files_arr.opened_files[i].filepath, "");
+      strcpy(opened_files_arr.opened_files[i].client_ip, "");
+      opened_files_arr.opened_files[i].flags = -1;
+      
+      for(int j = i; j < opened_files_arr.num_opened_files-1; j++) {
+        opened_files_arr.opened_files[j].file_descriptor =
+          opened_files_arr.opened_files[j+1].file_descriptor;
+	strcpy(opened_files_arr.opened_files[j].filepath,
+          opened_files_arr.opened_files[j+1].filepath);
+        strcpy(opened_files_arr.opened_files[j].client_ip,
+          opened_files_arr.opened_files[j+1].client_ip);
+	opened_files_arr.opened_files[j].flags = opened_files_arr.opened_files[j+1].flags;
+      }
+
+      opened_files_arr.num_opened_files--;
+      result = 1;
+      break;
+    }
+  }
+
+  return result;
+}
+
+int add_opened_dir(struct client_info ci, int dd, char *path) {
+  opened_dirs_arr.opened_dirs[opened_dirs_arr.num_opened_dirs].dir_descriptor = dd;
+  strcpy(opened_dirs_arr.opened_dirs[opened_dirs_arr.num_opened_dirs].dirpath, path);
+  strcpy(opened_dirs_arr.opened_dirs[opened_dirs_arr.num_opened_dirs].client_ip, ci.ip);
+  opened_dirs_arr.num_opened_dirs++;
+}
+
+int remove_opened_dir(struct client_info ci, int dd) {
+  int result = 0;
+  int i;
+
+  for(i = 0; i < opened_dirs_arr.num_opened_dirs; i++) {
+    if(opened_dirs_arr.opened_dirs[i].dir_descriptor == dd 
+      && !strcmp(opened_dirs_arr.opened_dirs[i].client_ip, ci.ip)) {
+      opened_dirs_arr.opened_dirs[i].dir_descriptor = 0;
+      strcpy(opened_dirs_arr.opened_dirs[i].dirpath, "");
+      strcpy(opened_dirs_arr.opened_dirs[i].client_ip, "");
+
+      for(int j = i; j < opened_dirs_arr.num_opened_dirs-1; j++) {
+        opened_dirs_arr.opened_dirs[j].dir_descriptor =
+          opened_dirs_arr.opened_dirs[j+1].dir_descriptor;
+	strcpy(opened_dirs_arr.opened_dirs[j].dirpath,
+          opened_dirs_arr.opened_dirs[j+1].dirpath);
+        strcpy(opened_dirs_arr.opened_dirs[j].client_ip,
+          opened_dirs_arr.opened_dirs[j+1].client_ip);
+      }
+
+      opened_dirs_arr.num_opened_dirs--;
+      result = 1;
+      break;
+    }
+  }
+
+  return result;
+}
+
 int has_access_to_dir(struct client_info ci, char *dp) {
   int result = 0;
   int i = 0;
@@ -175,6 +250,21 @@ int has_opened_dir(struct client_info ci, int dd) {
   return result;
 }
 
+int has_opened_dir_by_path(struct client_info ci, char *path) {
+  int result = 0;
+  int i;
+
+  for(i = 0; i < opened_dirs_arr.num_opened_dirs; i++) {
+    if(!strcmp(opened_dirs_arr.opened_dirs[i].dirpath, path) 
+      && !strcmp(opened_dirs_arr.opened_dirs[i].client_ip, ci.ip)) {
+      result = 1;
+      break;
+    }
+  }
+
+  return result;
+}
+
 int has_read_access(struct client_info ci, int fd) {
   int result = 0;
   int i = 0;
@@ -214,42 +304,6 @@ int has_write_access(struct client_info ci, int fd) {
     }
 
     i++;
-  }
-
-  return result;
-}
-
-int add_opened_file(struct client_info ci, int fd, char *path, int flags) {
-  opened_files_arr.opened_files[opened_files_arr.num_opened_files].file_descriptor = fd;
-  strcpy(opened_files_arr.opened_files[opened_files_arr.num_opened_files].filepath, path);
-  strcpy(opened_files_arr.opened_files[opened_files_arr.num_opened_files].client_ip, ci.ip);
-  opened_files_arr.opened_files[opened_files_arr.num_opened_files].flags = flags;
-  opened_files_arr.num_opened_files++;
-}
-
-int remove_opened_file(struct client_info ci, int fd) {
-  int result = 0;
-  int i;
-
-  for(i = 0; i < opened_files_arr.num_opened_files; i++) {
-    if(opened_files_arr.opened_files[i].file_descriptor == fd 
-      && !strcmp(opened_files_arr.opened_files[i].client_ip, ci.ip)) {
-      opened_files_arr.opened_files[i].file_descriptor = 0;
-      strcpy(opened_files_arr.opened_files[i].client_ip, "");
-      opened_files_arr.opened_files[i].flags = -1;
-      
-      for(int j = i; j < opened_files_arr.num_opened_files-1; j++) {
-        opened_files_arr.opened_files[j].file_descriptor =
-          opened_files_arr.opened_files[j+1].file_descriptor;
-        strcpy(opened_files_arr.opened_files[j].client_ip,
-          opened_files_arr.opened_files[j+1].client_ip);
-	opened_files_arr.opened_files[j].flags = opened_files_arr.opened_files[j+1].flags;
-      }
-
-      opened_files_arr.num_opened_files--;
-      result = 1;
-      break;
-    }
   }
 
   return result;

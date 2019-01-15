@@ -58,33 +58,39 @@ int mynfs_fstat(int fd) {
 
 int mynfs_opendir(struct client_info ci, char *path) {
   printf("mynfs_opendir %s %s\n", ci.ip, path);
-  int dd;
-  DIR *pDir;  // might need to be global
-  dd = -1;
-  pDir = opendir(path);
+  DIR *dir_p;  // might need to be global
+  int dd = -1;
+  dir_p = opendir(path);
 
-  if(pDir == NULL) {
-    dd = -1;
+  if(dir_p == NULL) {
+    mynfs_error = 3;
   } else {
-    dd = dirfd(pDir);  // (?)
-  }
-
-  if(dd == -1)
-    mynfs_error = 1;
-  else {
-    opened_dirs_arr.opened_dirs[opened_dirs_arr.num_opened_dirs].dir_descriptor = dd;
-    strcpy(opened_dirs_arr.opened_dirs[opened_dirs_arr.num_opened_dirs].client_ip, ci.ip);
-    opened_dirs_arr.num_opened_dirs++;
+    dd = dirfd(dir_p);
   }
 
   return dd;
 }
 
-int mynfs_closedir(int dirfd) {
-  printf("mynfs_closedir %d\n", dirfd);
+int mynfs_closedir(int dd) {
+  printf("mynfs_closedir %d\n", dd);
+  DIR *dir_p = fdopendir(dd);
+  int result;
+/*
+  for(int i = 0; i < opened_dirs_arr.num_opened_dirs; i++) {
+    if(opened_dirs_arr.opened_dirs[i].dir_descriptor == dd) {
+      dir_p = opened_dirs_arr.opened_dirs[i].dir_pointer;
+      break;
+    }
+  }*/
+
+  if((result = closedir(dir_p)) == -1) {
+    mynfs_error = 4;
+  }
+
+  return result;
 }
 
-int mynfs_readdir(int dirfd) {
+int mynfs_readdir(int dd) {
   printf("mynfs_readdir %d\n", dirfd);
 }
 
@@ -153,14 +159,18 @@ void exec_operation(char *message, struct client_info ci) {
   } else if(!strcmp(op, "mynfs_opendir")) {
     char *dirpath = strtok(NULL, " ");
 
-    if(has_access_to_dir(ci, dirpath)) {
-      dd = mynfs_opendir(ci, dirpath);
+    if(has_access_to_dir(ci, dirpath) && !has_opened_dir_by_path(ci, dirpath)) {
+      if((dd = mynfs_opendir(ci, dirpath)) != -1) {
+	add_opened_dir(ci, dd, dirpath);
+      }
     }
   } else if(!strcmp(op, "mynfs_closedir")) {
     dd = atoi(strtok(NULL, " "));
 
     if(has_opened_dir(ci, dd)) {
-      mynfs_closedir(dd);
+      if(mynfs_closedir(dd) == 0) {
+        remove_opened_dir(ci, dd);
+      }
     }
   } else if(!strcmp(op, "mynfs_readdir")) {
     dd = atoi(strtok(NULL, " "));
