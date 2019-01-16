@@ -10,13 +10,13 @@ int mynfs_open(struct client_info ci, char *path, int flags, int mode);
 
 int mynfs_close(int fd);
 
-int mynfs_read(int fd, void *buf, int size);
+int mynfs_read(struct client_info ci, int fd, void *buf, int size);
 
-int mynfs_write(int fd, void *buf, int size);
+int mynfs_write(struct client_info ci, int fd, void *buf, int size);
 
 int mynfs_lseek(int fd, int offset, int whence);
 
-int mynfs_unlink(int fd);
+int mynfs_unlink(char *path);
 
 int mynfs_fstat(int fd);
 
@@ -24,7 +24,7 @@ int mynfs_opendir(struct client_info ci, char *path);
 
 int mynfs_closedir(int dd);
 
-int mynfs_readdir(int dd);
+char *mynfs_readdir(int dd);
 
 void exec_operation(char *message, struct client_info ci);
 

@@ -25,7 +25,7 @@ void load_client_accesses() {
   int count = 0, len = 30, i;
   char c;
   char *buf = NULL;
-  FILE *f = fopen("/home/mosowiec/Workspace/network_file_system/server/accesses", "r");
+  FILE *f = fopen("accesses", "r");
   
   if(f == NULL) {
     printf("could not open file\n");
@@ -70,7 +70,7 @@ void load_client_accesses() {
   fclose(f);
 }
 
-int add_opened_file(struct client_info ci, int fd, char *path, int flags) {
+void add_opened_file(struct client_info ci, int fd, char *path, int flags) {
   opened_files_arr.opened_files[opened_files_arr.num_opened_files].file_descriptor = fd;
   strcpy(opened_files_arr.opened_files[opened_files_arr.num_opened_files].filepath, path);
   strcpy(opened_files_arr.opened_files[opened_files_arr.num_opened_files].client_ip, ci.ip);
@@ -78,8 +78,7 @@ int add_opened_file(struct client_info ci, int fd, char *path, int flags) {
   opened_files_arr.num_opened_files++;
 }
 
-int remove_opened_file(struct client_info ci, int fd) {
-  int result = 0;
+void remove_opened_file(struct client_info ci, int fd) {
   int i;
 
   for(i = 0; i < opened_files_arr.num_opened_files; i++) {
@@ -101,23 +100,19 @@ int remove_opened_file(struct client_info ci, int fd) {
       }
 
       opened_files_arr.num_opened_files--;
-      result = 1;
       break;
     }
   }
-
-  return result;
 }
 
-int add_opened_dir(struct client_info ci, int dd, char *path) {
+void add_opened_dir(struct client_info ci, int dd, char *path) {
   opened_dirs_arr.opened_dirs[opened_dirs_arr.num_opened_dirs].dir_descriptor = dd;
   strcpy(opened_dirs_arr.opened_dirs[opened_dirs_arr.num_opened_dirs].dirpath, path);
   strcpy(opened_dirs_arr.opened_dirs[opened_dirs_arr.num_opened_dirs].client_ip, ci.ip);
   opened_dirs_arr.num_opened_dirs++;
 }
 
-int remove_opened_dir(struct client_info ci, int dd) {
-  int result = 0;
+void remove_opened_dir(struct client_info ci, int dd) {
   int i;
 
   for(i = 0; i < opened_dirs_arr.num_opened_dirs; i++) {
@@ -137,12 +132,9 @@ int remove_opened_dir(struct client_info ci, int dd) {
       }
 
       opened_dirs_arr.num_opened_dirs--;
-      result = 1;
       break;
     }
   }
-
-  return result;
 }
 
 int has_access_to_dir(struct client_info ci, char *dp) {
@@ -270,9 +262,10 @@ int has_read_access(struct client_info ci, int fd) {
   int i = 0;
 
   while(i < opened_files_arr.num_opened_files) {
+    int file_des = opened_files_arr.opened_files[i].file_descriptor;
     char *client_ip = opened_files_arr.opened_files[i].client_ip;
 
-    if(!strcmp(ci.ip, client_ip)) {
+    if(!strcmp(ci.ip, client_ip) && fd == file_des) {
       int flags = opened_files_arr.opened_files[i].flags;
 
       if(flags == O_RDWR || flags == O_RDONLY) {
@@ -292,9 +285,10 @@ int has_write_access(struct client_info ci, int fd) {
   int i = 0;
 
   while(i < opened_files_arr.num_opened_files) {
+    int file_des = opened_files_arr.opened_files[i].file_descriptor;
     char *client_ip = opened_files_arr.opened_files[i].client_ip;
 
-    if(!strcmp(ci.ip, client_ip)) {
+    if(!strcmp(ci.ip, client_ip) && fd == file_des) {
       int flags = opened_files_arr.opened_files[i].flags;
 
       if(flags == O_RDWR || flags == O_WRONLY) {

@@ -7,7 +7,6 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
@@ -20,6 +19,9 @@
 #define O_WRONLY 01
 #define O_RDWR 02
 #define O_CREAT 0100
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
 
 struct mynfs_access {
   char client_ip[20];
@@ -64,13 +66,13 @@ void init_server_socket(int *server_sock);
 
 void load_client_accesses();
 
-int add_opened_file(struct client_info ci, int fd, char *path, int flags);
+void add_opened_file(struct client_info ci, int fd, char *path, int flags);
 
-int remove_opened_file(struct client_info ci, int fd);
+void remove_opened_file(struct client_info ci, int fd);
 
-int add_opened_dir(struct client_info ci, int dd, char *path);
+void add_opened_dir(struct client_info ci, int dd, char *path);
 
-int remove_opened_dir(struct client_info ci, int dd);
+void remove_opened_dir(struct client_info ci, int dd);
 
 int has_access_to_dir(struct client_info ci, char *dp);
 

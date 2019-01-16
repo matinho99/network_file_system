@@ -12,14 +12,16 @@ int mynfs_open(struct client_info ci, char *path, int flags, int mode) {
     if(flags == O_CREAT)
       
   } */
-  if(mode == O_CREAT)
-    fd = open(path, flags, mode);
-  else
+  if(flags == O_CREAT|O_RDONLY || flags == O_CREAT|O_WRONLY || flags == O_CREAT|O_RDWR) {
+    fd = open(path, flags, 00700);
+  } else {
     fd = open(path, flags);
+  }
 
-  if(fd == -1)
+  if(fd == -1) {
     mynfs_error = 1;
-
+  }
+  
   return fd;
 }
 
@@ -34,26 +36,49 @@ int mynfs_close(int fd) {
   return result;
 }
 
-int mynfs_read(int fd, void *buf, int size) {
+int mynfs_read(struct client_info ci, int fd, void *buf, int size) {
   printf("mynfs_read %d buf %d\n", fd, size);
-
 
 }
 
-int mynfs_write(int fd, void *buf, int size) {
+int mynfs_write(struct client_info ci, int fd, void *buf, int size) {
   printf("mynfs_write %d buf %d\n", fd, size);
 }
 
 int mynfs_lseek(int fd, int offset, int whence) {
   printf("mynfs_lseek %d %d %d\n", fd, offset, whence);
+  int result;
+  
+  if((result = lseek(fd, offset, whence)) == -1) {
+    mynfs_error = 6;
+  }
+
+  return result;
 }
 
-int mynfs_unlink(int fd) {
-  printf("mynfs_unlink %d\n", fd);
+int mynfs_unlink(char *path) {
+  printf("mynfs_unlink %s\n", path);
+  int result;
+  
+  if((result = unlink(path)) == -1) {
+    mynfs_error = 5;
+  }
+
+  return result;
 }
 
 int mynfs_fstat(int fd) {
   printf("mynfs_fstat %d\n", fd);
+  int result;
+  struct stat buf;
+  
+  if((result = fstat(fd, &buf)) == -1) {
+    mynfs_error = 7;
+  } else {
+    printf("st_dev %d; st_ino %d; st_uid %d; st_size %d;\n", buf.st_dev, buf.st_ino, buf.st_uid, buf.st_size);
+  }
+  
+  return result;
 }
 
 int mynfs_opendir(struct client_info ci, char *path) {
@@ -90,13 +115,13 @@ int mynfs_closedir(int dd) {
   return result;
 }
 
-int mynfs_readdir(int dd) {
-  printf("mynfs_readdir %d\n", dirfd);
+char *mynfs_readdir(int dd) {
+  printf("mynfs_readdir %d\n", dd);
 }
 
 void exec_operation(char *message, struct client_info ci) {
   char *op = strtok(message, " ");
-  int fd = 0, dd;
+  int fd, dd;
 
   if(!strcmp(op, "mynfs_open")) {
     char *filepath = strtok(NULL, " ");
@@ -109,7 +134,7 @@ void exec_operation(char *message, struct client_info ci) {
         add_opened_file(ci, fd, filepath, flags);
       }
 
-      printf("mynfs_open fd: %d", fd);
+      printf("mynfs_open fd: %d\n", fd);
     }
   } else if(!strcmp(op, "mynfs_close")) {
     fd = atoi(strtok(NULL, " "));
@@ -131,30 +156,36 @@ void exec_operation(char *message, struct client_info ci) {
   } else if(!strcmp(op, "mynfs_write")) {
     fd = atoi(strtok(NULL, " "));
 
-    if(has_opened_file(ci, fd) && has_read_access(ci, fd)) {
+    if(has_opened_file(ci, fd) && has_write_access(ci, fd)) {
       int res;
       //mynfs_write(fd);
     }
   } else if(!strcmp(op, "mynfs_lseek")) {
     fd = atoi(strtok(NULL, " "));
+    int offset = atoi(strtok(NULL, " "));
+    int whence = atoi(strtok(NULL, " "));
 
     if(has_opened_file(ci, fd)) {
-      int res;
-      mynfs_close(fd);
+      if(mynfs_lseek(fd, offset, whence) != -1) {
+	send_success(ci);
+      }
     }
   } else if(!strcmp(op, "mynfs_unlink")) {
-    fd = atoi(strtok(NULL, " "));
-
-    if(has_opened_file(ci, fd) && has_write_access(ci, fd)) {
-      int res;
-      mynfs_close(fd);
+    char *filepath = strtok(NULL, " ");
+printf("c1\n");
+    if(has_access_to_file(ci, filepath, O_WRONLY)) {
+printf("c2\n");
+      if(mynfs_unlink(filepath) == 0) {
+	send_success(ci);
+      }
     }
   } else if(!strcmp(op, "mynfs_fstat")) {
     fd = atoi(strtok(NULL, " "));
 
     if(has_opened_file(ci, fd)) {
-      int res;
-      mynfs_close(fd);
+      if(mynfs_fstat(fd) != -1) {
+        send_success(ci);
+      }
     }
   } else if(!strcmp(op, "mynfs_opendir")) {
     char *dirpath = strtok(NULL, " ");
