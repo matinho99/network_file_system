@@ -1,8 +1,10 @@
 #ifndef MYNFS_ERROR_H
 #define MYNFS_ERROR_H
 
+#include <string.h>
+
 int mynfs_error;
 
-char *get_error_message(int err_no);
+char *get_error();
 
 #endif

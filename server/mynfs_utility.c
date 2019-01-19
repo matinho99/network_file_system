@@ -71,6 +71,7 @@ void load_client_accesses() {
 }
 
 void add_opened_file(struct client_info ci, int fd, char *path, int flags) {
+	printf("add_opened_file\n");
   opened_files_arr.opened_files[opened_files_arr.num_opened_files].file_descriptor = fd;
   strcpy(opened_files_arr.opened_files[opened_files_arr.num_opened_files].filepath, path);
   strcpy(opened_files_arr.opened_files[opened_files_arr.num_opened_files].client_ip, ci.ip);
@@ -92,11 +93,11 @@ void remove_opened_file(struct client_info ci, int fd) {
       for(int j = i; j < opened_files_arr.num_opened_files-1; j++) {
         opened_files_arr.opened_files[j].file_descriptor =
           opened_files_arr.opened_files[j+1].file_descriptor;
-	strcpy(opened_files_arr.opened_files[j].filepath,
+				strcpy(opened_files_arr.opened_files[j].filepath,
           opened_files_arr.opened_files[j+1].filepath);
         strcpy(opened_files_arr.opened_files[j].client_ip,
           opened_files_arr.opened_files[j+1].client_ip);
-	opened_files_arr.opened_files[j].flags = opened_files_arr.opened_files[j+1].flags;
+				opened_files_arr.opened_files[j].flags = opened_files_arr.opened_files[j+1].flags;
       }
 
       opened_files_arr.num_opened_files--;
@@ -125,7 +126,7 @@ void remove_opened_dir(struct client_info ci, int dd) {
       for(int j = i; j < opened_dirs_arr.num_opened_dirs-1; j++) {
         opened_dirs_arr.opened_dirs[j].dir_descriptor =
           opened_dirs_arr.opened_dirs[j+1].dir_descriptor;
-	strcpy(opened_dirs_arr.opened_dirs[j].dirpath,
+				strcpy(opened_dirs_arr.opened_dirs[j].dirpath,
           opened_dirs_arr.opened_dirs[j+1].dirpath);
         strcpy(opened_dirs_arr.opened_dirs[j].client_ip,
           opened_dirs_arr.opened_dirs[j+1].client_ip);
@@ -269,8 +270,8 @@ int has_read_access(struct client_info ci, int fd) {
       int flags = opened_files_arr.opened_files[i].flags;
 
       if(flags == O_RDWR || flags == O_RDONLY) {
-	result = 1;
-	break;
+				result = 1;
+				break;
       }
     }
 
@@ -292,8 +293,8 @@ int has_write_access(struct client_info ci, int fd) {
       int flags = opened_files_arr.opened_files[i].flags;
 
       if(flags == O_RDWR || flags == O_WRONLY) {
-	result = 1;
-	break;
+				result = 1;
+				break;
       }
     }
 
@@ -304,17 +305,17 @@ int has_write_access(struct client_info ci, int fd) {
 }
 
 void send_success(struct client_info ci) {
-  char *success = "SUCCESS";
+  int success = 1;
 
-  if(write(ci.sock, success, sizeof success) == -1) {
+  if(write(ci.sock, &success, sizeof(int)) == -1) {
     perror("send_success failed");
   }
 }
 
 void send_failure(struct client_info ci) {
-  char *failure = "FAILURE";
+	int failure = 0;
 
-  if(write(ci.sock, failure, sizeof failure) == -1) {
+  if(write(ci.sock, &failure, sizeof(int)) == -1) {
     perror("send_failure failed");
   }
 }
@@ -322,7 +323,7 @@ void send_failure(struct client_info ci) {
 void send_error(struct client_info ci) {
   char *error = get_error();
 
-  if(write(ci.sock, error, sizeof error) == -1) {
+  if(write(ci.sock, error, 1024) == -1) {
     perror("send_error failed");
   }
 }

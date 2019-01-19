@@ -10,11 +10,14 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <time.h>
+#include <errno.h>
 #include <arpa/inet.h>
 #include "mynfs_error.h"
 
 #define PORT 8080
 #define MAX_CLIENTS 10
+#define TIMEOUT_SEC 30
 #define O_RDONLY 00
 #define O_WRONLY 01
 #define O_RDWR 02
