@@ -37,12 +37,42 @@ int mynfs_close(char *arg) {
   return 1;
 }
 
-int mynfs_read() {
+int mynfs_read(char *arg) {
 /*
 send com
 recv buf to read
 */
-  printf("mynfs_read issued\n");
+  char com[64] = "mynfs_read ";
+  char buf[1024];
+  char *path, *fd, *size;
+  int local_fd, n;
+  n = 0;
+  fd = strtok(arg, " ");
+  path = strtok(NULL, " ");
+  size = strtok(NULL, " ");
+  
+  local_fd = open(path, O_RDWR|O_CREAT, 00700);
+  printf("%d\n", local_fd);
+  if(local_fd == -1) {
+    mynfs_error = 6;
+    return 0;
+  }
+  
+  strcat(com, fd);
+  strcat(com, " ");
+  strcat(com, size);
+  printf("%s sent\n", com);
+  write(sock, com, 1024);
+  
+  read(sock, &n, sizeof(int));
+  printf("%d received\n", n);
+  read(sock, buf, n);
+  printf("buf: %s\n", buf);
+  if(write(local_fd, buf, n-1) == -1) {
+    printf("wot\n");
+    mynfs_error = 8;
+    return 0;
+  }
   return 1;
 }
 
@@ -62,6 +92,12 @@ send buf to write
   size = atoi(strtok(NULL, " "));
   
   local_fd = open(path, O_RDONLY);
+  
+  if(local_fd == -1) {
+    mynfs_error = 7;
+    return 0;
+  }
+  
   n = read(local_fd, buf, size);
   printf("%s", com);
   
@@ -70,9 +106,9 @@ send buf to write
   sprintf(sn, "%d", n);
   strcat(com, sn);
   
-  printf("%s\n", com);
+  printf("%s\n", com); //
   write(sock, com, sizeof(com));
-  printf("sent\n");
+  printf("sent\n"); //
   
   write(sock, buf, n);
   
@@ -199,7 +235,7 @@ void client_exec() {
     if(!strcmp(com, "mynfs_open"))
       res = mynfs_open(arg);
     if(!strcmp(com, "mynfs_read"))
-      res = mynfs_read();
+      res = mynfs_read(arg);
     if(!strcmp(com, "mynfs_write"))
       res = mynfs_write(arg);
     if(!strcmp(com, "mynfs_lseek"))
