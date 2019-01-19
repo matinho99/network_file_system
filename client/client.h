@@ -1,15 +1,6 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <arpa/inet.h>
-#include <unistd.h>
 #include "mynfs_utility.h"
 
 int sock;
@@ -20,7 +11,7 @@ int mynfs_open(char *arg);
 
 int mynfs_close(char *arg);
 
-int mynfs_read();
+int mynfs_read(char *arg);
 
 int mynfs_write(char *arg);
 
@@ -28,13 +19,13 @@ int mynfs_lseek(char *arg);
 
 int mynfs_unlink(char *arg);
 
+int mynfs_fstat(char *arg);
+
 int mynfs_opendir(char *arg);
 
 int mynfs_closedir(char *arg);
 
-int mynfs_readdir();
-
-int mynfs_fstat();
+int mynfs_readdir(char *arg);
 
 void init_client_socket(char *host, char *port);
 
