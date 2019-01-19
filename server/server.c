@@ -28,8 +28,9 @@ int mynfs_close(int fd) {
 
 int mynfs_read(int fd, void *buf, int size) {
   printf("mynfs_read %d buf %d\n", fd, size);
-
-
+  int res;
+  res = read(fd, buf, size);
+  return res;
 }
 
 int mynfs_write(int fd, void *buf, int size) {
@@ -118,10 +119,16 @@ void exec_operation(char *message, struct client_info ci) {
     }
   } else if(!strcmp(op, "mynfs_read")) {
     fd = atoi(strtok(NULL, " "));
+    int size;
+    size = atoi(strtok(NULL, " "));
 
     if(has_opened_file(ci, fd) && has_read_access(ci, fd)) {
       int res;
-      //res = mynfs_read(fd, buf, size);
+      char buf[size];
+      res = mynfs_read(fd, buf, size);
+      printf("mynfs_read result: %d\n", res);
+      write(ci.sock, &res, sizeof(int));
+      write(ci.sock, buf, res);
     }
   } else if(!strcmp(op, "mynfs_write")) {
     fd = atoi(strtok(NULL, " "));
@@ -130,14 +137,6 @@ void exec_operation(char *message, struct client_info ci) {
     if(fd != 0) {
       printf("%d, %d\n", fd, size);
       if(has_opened_file(ci, fd) && has_write_access(ci, fd)) {
-        /*int res;
-        char buf[1024], buf2[size];
-        send_success(ci);
-        read(ci.sock, buf2, size);
-        res = mynfs_write(fd, buf2, size);
-        
-        printf("%d\n%d\n", res, size);
-        */
         int res;
         char buf[size];
         read(ci.sock, buf, size);
@@ -249,7 +248,7 @@ void server_exec() {
         if(num_bytes_read > 0) {
 	  printf("message received: %s\n", buffer);
 	  exec_operation(buffer, client_sockets[i]);
-	  send_success(client_sockets[i]);
+	  //send_success(client_sockets[i]);
         } else if(num_bytes_read == 0) {
           printf("host disconnected\n");
 	  client_sockets[i].sock = 0;
