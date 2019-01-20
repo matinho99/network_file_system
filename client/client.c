@@ -16,7 +16,7 @@ void help() {
 }
 
 int mynfs_open(char *arg) {
-  char com[50] = "mynfs_open ";
+  char com[64] = "mynfs_open ";
   char buf[1024], *path;
   int fd, flags,success = 1;
   strcat(com, arg);
@@ -43,7 +43,7 @@ int mynfs_open(char *arg) {
 }
 
 int mynfs_close(char *arg) {
-  char com[50] = "mynfs_close ";
+  char com[64] = "mynfs_close ";
   strcat(com, arg);
   int response, fd, result = 0;
   
@@ -142,7 +142,7 @@ int mynfs_write(char *arg) {
 int mynfs_lseek(char *arg) {
 	printf("mynfs_lseek issued\n");
 	int result, response = 0;
-  char com[50] = "mynfs_lseek ";
+  char com[64] = "mynfs_lseek ";
   strcat(com, arg);
   
   if(write(sock, com, 1024) == -1) {
@@ -165,7 +165,7 @@ int mynfs_lseek(char *arg) {
 
 int mynfs_unlink(char *arg) {
 	int response, result = -1;
-  char com[50] = "mynfs_unlink ";
+  char com[64] = "mynfs_unlink ";
   strcat(com, arg);
   
   if(write(sock, com, 1024) == -1) {
@@ -182,16 +182,46 @@ int mynfs_unlink(char *arg) {
 }
 
 int mynfs_fstat(char *arg) {
-  char com[50] = "mynfs_fstat ";
+  struct stat buf;
+  char com[64] = "mynfs_fstat ";
   strcat(com, arg);
   write(sock, com, 1024);
   printf("mynfs_fstat issued\n");
+  
+  read(sock, &buf.st_dev, sizeof(dev_t));
+  read(sock, &buf.st_ino, sizeof(ino_t));
+  read(sock, &buf.st_mode, sizeof(mode_t));
+  read(sock, &buf.st_nlink, sizeof(nlink_t));
+  read(sock, &buf.st_uid, sizeof(uid_t));
+  read(sock, &buf.st_gid, sizeof(gid_t));
+  read(sock, &buf.st_rdev, sizeof(dev_t));
+  read(sock, &buf.st_size, sizeof(off_t));
+  read(sock, &buf.st_blksize, sizeof(blksize_t));
+  read(sock, &buf.st_blocks, sizeof(blkcnt_t));
+  read(sock, &buf.st_atime, sizeof(time_t));
+  read(sock, &buf.st_mtime, sizeof(time_t));
+  read(sock, &buf.st_ctime, sizeof(time_t));
+  
+  printf("\nst_dev: %d\n", buf.st_dev);
+  printf("st_ino: %d\n", buf.st_ino);
+  printf("st_mode: %d\n", buf.st_mode);
+  printf("st_nlink: %d\n", buf.st_nlink);
+  printf("st_uid: %d\n", buf.st_uid);
+  printf("st_gid: %d\n", buf.st_gid);
+  printf("st_rdev: %d\n", buf.st_rdev);
+  printf("st_size: %d\n", buf.st_size);
+  printf("st_blksize: %d\n", buf.st_blksize);
+  printf("st_blocks: %d\n", buf.st_blocks);
+  printf("st_atime: %d\n", buf.st_atime);
+  printf("st_mtime: %d\n", buf.st_mtime);
+  printf("st_ctime: %d\n\n", buf.st_ctime);
+  
   return 1;
 }
 
 int mynfs_opendir(char *arg) {
 	int dd, success = 1;
-  char com[50] = "mynfs_opendir ";
+  char com[64] = "mynfs_opendir ";
   strcat(com, arg);
   
   if(write(sock, com, 1024) == -1) {
@@ -214,7 +244,7 @@ int mynfs_opendir(char *arg) {
 
 int mynfs_closedir(char *arg) {
 	int response, dd,result = 0;
-  char com[50] = "mynfs_closedir ";
+  char com[64] = "mynfs_closedir ";
   strcat(com, arg);
   
   if(write(sock, com, 1024) == -1) {
@@ -239,7 +269,7 @@ int mynfs_closedir(char *arg) {
 }
 
 int mynfs_readdir(char *arg) {
-  char com[50] = "mynfs_readdir ";
+  char com[64] = "mynfs_readdir ";
   strcat(com, arg);
   write(sock, com, 1024);
   printf("mynfs_readdir issued\n");
@@ -248,7 +278,7 @@ int mynfs_readdir(char *arg) {
 
 void client_exec() {
   while(1) {
-    int n = 128;
+    int n = 64;
     char *str, getstr[n], *com, *arg;
     str = fgets(getstr, n, stdin);
     // if(str == NULL)

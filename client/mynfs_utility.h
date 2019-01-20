@@ -10,6 +10,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include "mynfs_error.h"
 
 #define O_RDONLY 00
