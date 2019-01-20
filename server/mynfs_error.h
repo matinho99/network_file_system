@@ -1,10 +1,10 @@
 #ifndef MYNFS_ERROR_H
 #define MYNFS_ERROR_H
 
-#include <string.h>
+#include <stdio.h>
 
-int mynfs_error;
+int mynfs_error; /* global error variable */
 
-char *get_error();
+void print_error();
 
 #endif

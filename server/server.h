@@ -4,7 +4,7 @@
 #include "mynfs_utility.h"
 #include "mynfs_error.h"
 
-int server_sock;
+int server_sock; /* server socket */
 
 int mynfs_open(struct client_info ci, char *path, int flags, int mode);
 
@@ -24,7 +24,7 @@ int mynfs_opendir(struct client_info ci, char *path);
 
 int mynfs_closedir(int dd);
 
-char *mynfs_readdir(int dd);
+int mynfs_readdir(struct client_info ci, int dd);
 
 void exec_operation(char *message, struct client_info ci);
 

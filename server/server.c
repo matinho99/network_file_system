@@ -1,5 +1,17 @@
 #include "server.h"
 
+/*
+ * function: mynfs_open
+ *
+ * opens the specified file with appropriate flags and sends a descriptor to client
+ *
+ * ci - client info storing host's ip and socket
+ * path - path to file to open
+ * flags - open options like O_RDONLY, O_WRONLY
+ * mode - additional options if O_CREAT is specified in flags
+ *
+ * returns: file descriptor if successful; -1 if failed
+ */
 int mynfs_open(struct client_info ci, char *path, int flags, int mode) {
   printf("mynfs_open %s %s %d %d\n", ci.ip, path, flags, mode);
   int fd, response;
@@ -22,78 +34,134 @@ int mynfs_open(struct client_info ci, char *path, int flags, int mode) {
     mynfs_error = 3;
   }
   
-  printf("response = %d;\n", response);
-  
-  if(response == 0) {
-    mynfs_error = 4;
-  }
-  
   printf("mynfs_error = %d\n", mynfs_error);
   return fd;
 }
 
+/*
+ * function: mynfs_close
+ *
+ * closes file specified by the file descriptor
+ *
+ * fd - file descriptor
+ *
+ * returns: 0 if successful; -1 if failed
+ */
 int mynfs_close(int fd) {
   printf("mynfs_close %d\n", fd);
   int result;
   
   if((result = close(fd)) == -1) {
-    mynfs_error = 5;
+    mynfs_error = 4;
   }
 
   return result;
 }
 
+/*
+ * function: mynfs_read
+ *
+ * reads number of bytes specified by size from file to buffer
+ *
+ * fd - file descriptor
+ * buf - buffer for data from file
+ * size - number of bytes to read from file
+ *
+ * returns: number of bytes read; -1 if failed
+ */
 int mynfs_read(int fd, void *buf, int size) {
   printf("mynfs_read %d buf %d\n", fd, size);
 	int result;
   
   if((result = read(fd, buf, size)) == -1) {
+  	mynfs_error = 5;
+  }
+  
+  return result;
+}
+
+/*
+ * function: mynfs_write
+ *
+ * writes number of bytes specified by size from buffer to file
+ *
+ * fd - file descriptor
+ * buf - buffer with data for file
+ * size - number of bytes to write to file
+ *
+ * returns: number of bytes written; -1 if failed
+ */
+int mynfs_write(int fd, void *buf, int size) {
+  printf("mynfs_write %d buf %d\n", fd, size);
+  int result;
+  
+  if((result = write(fd, buf, size)) == -1) {
   	mynfs_error = 6;
   }
   
   return result;
 }
 
-int mynfs_write(int fd, void *buf, int size) {
-  printf("mynfs_write %d buf %d\n", fd, size);
-  int result;
-  
-  if((result = write(fd, buf, size)) == -1) {
-  	mynfs_error = 7;
-  }
-  
-  return result;
-}
-
+/*
+ * function: mynfs_lseek
+ *
+ * moves the pointer inside of file stream by offset
+ *
+ * fd - file descriptor
+ * offset - number of bytes to move pointer by
+ * whence - position from which the pointer is moved: SEEK_SET - beginning, 
+ *    SEEK_END - end, SEEK_CUR - current position
+ *
+ * returns: position of pointer in file; -1 if failed
+ */
 int mynfs_lseek(int fd, int offset, int whence) {
   printf("mynfs_lseek %d %d %d\n", fd, offset, whence);
   int result;
   
   if((result = lseek(fd, offset, whence)) == -1) {
+    mynfs_error = 7;
+  }
+
+  return result;
+}
+
+/*
+ * function: mynfs_unlink
+ *
+ * deletes file specified by path
+ *
+ * path - file path
+ *
+ * returns: 0 if successful; -1 if failed
+ */
+int mynfs_unlink(char *path) {
+  printf("mynfs_unlink %s\n", path);
+  int result;
+  
+  if((result = unlink(path)) == -1) {
     mynfs_error = 8;
   }
 
   return result;
 }
 
-int mynfs_unlink(char *path) {
-  printf("mynfs_unlink %s\n", path);
-  int result;
-  
-  if((result = unlink(path)) == -1) {
-    mynfs_error = 9;
-  }
-
-  return result;
-}
-
+/*
+ * function: mynfs_fstat
+ *
+ * sends information from stat structure for specified file
+ *
+ * ci - client information
+ * fd - file descriptor
+ *
+ * returns: 0 if successful; -1 if failed
+ */
 int mynfs_fstat(struct client_info ci, int fd) {
   printf("mynfs_fstat %d\n", fd);
   int result;
   struct stat buf;
   
   if((result = fstat(fd, &buf)) == -1) {
-    mynfs_error = 10;
+    mynfs_error = 9;
   } else {
     printf("st_dev %d; st_ino %d; st_uid %d; st_size %d; st_atime %d\n", buf.st_dev, buf.st_ino, 
       buf.st_uid, buf.st_size, buf.st_atime);
@@ -112,10 +180,19 @@ int mynfs_fstat(struct client_info ci, int fd) {
   write(ci.sock, &buf.st_atime, sizeof(time_t));
   write(ci.sock, &buf.st_mtime, sizeof(time_t));
   write(ci.sock, &buf.st_ctime, sizeof(time_t));
-  
   return result;
 }
 
+/*
+ * function: mynfs_opendir
+ *
+ * opens directory specified by path
+ *
+ * ci - client information
+ * path - path to directory
+ *
+ * returns: directory descriptor if successful; -1 if failed
+ */
 int mynfs_opendir(struct client_info ci, char *path) {
   printf("mynfs_opendir %s %s\n", ci.ip, path);
   DIR *dir_p;  // might need to be global
@@ -124,7 +201,7 @@ int mynfs_opendir(struct client_info ci, char *path) {
   dir_p = opendir(path);
 
   if(dir_p == NULL) {
-    mynfs_error = 11;
+    mynfs_error = 10;
   } else {
     dd = dirfd(dir_p);
   }
@@ -136,50 +213,83 @@ int mynfs_opendir(struct client_info ci, char *path) {
   if(read(ci.sock, &response, sizeof(int)) == -1) {
     mynfs_error = 3;
   }
-  
-  printf("response = %d;\n", response);
-  
-  if(response == 0) {
-    mynfs_error = 4;
-  }
 
   return dd;
 }
 
+/*
+ * function: mynfs_closedir
+ *
+ * closes directory specified by the directory descriptor
+ *
+ * dd - directory descriptor
+ *
+ * returns: 0 if successful; -1 if failed
+ */
 int mynfs_closedir(int dd) {
   printf("mynfs_closedir %d\n", dd);
   DIR *dir_p = fdopendir(dd);
   int result;
 
   if((result = closedir(dir_p)) == -1) {
-    mynfs_error = 4;
+    mynfs_error = 11;
   }
 
   return result;
 }
 
-char *mynfs_readdir(int dd) {
+/*
+ * function: mynfs_readdir
+ *
+ * sends directory entries to client
+ *
+ * ci - client information
+ * dd - directory descriptor
+ *
+ * returns: 0 if successful; -1 if failed
+ */
+int mynfs_readdir(struct client_info ci, int dd) {
   printf("mynfs_readdir %d\n", dd);
-  char result[1024];
+  char buf[1024];
+  int response, result = 0;
   DIR *dir_p = fdopendir(dd);
   struct dirent *de;
   errno = 0;
- 	strcpy(result, "");
+  strcpy(buf, "");
  	
   while((de = readdir(dir_p)) != NULL) {
-    strcat(result, de->d_name);
-    strcat(result, "/");
+    strcat(buf, de->d_name);
+    strcat(buf, "/");
   }
   
   if(errno != 0) {
-    mynfs_error = 8;
+    mynfs_error = 12;
+    strcpy(buf, "");
+    result = -1;
   }
   
   rewinddir(dir_p);
-  printf("result after readdir: %s\n", result);
+  printf("buf after readdir: %s\n", buf);
+  
+  if(write(ci.sock, buf, 1024) == -1) {
+    mynfs_error = 2;
+  }
+  
+  if(read(ci.sock, &response, sizeof(int)) == -1) {
+		mynfs_error = 3;
+	}
+  
   return result;
 }
 
+/*
+ * function: exec_operation
+ *
+ * executes operations specified in message from client
+ *
+ * message - message from client containing operation type and arguments
+ * ci - client information
+ */
 void exec_operation(char *message, struct client_info ci) {
   char *op = strtok(message, " ");
   char buf[1024];
@@ -194,27 +304,30 @@ void exec_operation(char *message, struct client_info ci) {
     if(tmp != NULL) mode = atoi(tmp);
 
     if(has_access_to_file(ci, filepath, flags) && !has_opened_file_by_path(ci, filepath)) {
-      //send_success
+      send_success(ci);
+      
       if((fd = mynfs_open(ci, filepath, flags, mode)) != -1 && mynfs_error == 0) {
         add_opened_file(ci, fd, filepath, flags);
-      } else {
-//        get_error();
       }
     } else {
-    	
+      send_failure(ci);
     }
   } else if(!strcmp(op, "mynfs_close")) {
     fd = atoi(strtok(NULL, " "));
 
     if(has_opened_file(ci, fd)) {
-      int res;
-
-      if((res = mynfs_close(fd)) == 0) {
-	      remove_opened_file(ci, fd);
-	      send_success(ci);
-      } else {
-      	send_failure(ci);
+      send_success(ci);
+      int res = mynfs_close(fd);
+      
+      if(write(ci.sock, &res, sizeof(int)) == -1) {
+        mynfs_error = 13;
       }
+      
+      if(res == 0) {
+	      remove_opened_file(ci, fd);
+      }
+    } else {
+      send_failure(ci);
     }
   } else if(!strcmp(op, "mynfs_read")) {
     int size;
@@ -222,17 +335,20 @@ void exec_operation(char *message, struct client_info ci) {
     size = atoi(strtok(NULL, " "));
 
     if(has_opened_file(ci, fd) && has_read_access(ci, fd)) {
+      send_success(ci);
       int res;
 
-			if((res = mynfs_read(fd, buf, size))) {
+			if((res = mynfs_read(fd, buf, size)) >= 0) {
 				if(write(ci.sock, &res, sizeof(int)) == -1) {
-					//mynfs_error = ;
+					mynfs_error = 14;
 				}
 		
 				if(write(ci.sock, buf, res) == -1) {
-			 		//mynfs_error = ;
+			 		mynfs_error = 15;
 				}
 			}
+    } else {
+      send_failure(ci);
     }
   } else if(!strcmp(op, "mynfs_write")) {
   	int size;
@@ -240,17 +356,23 @@ void exec_operation(char *message, struct client_info ci) {
     size = atoi(strtok(NULL, " "));
 
     if(has_opened_file(ci, fd) && has_write_access(ci, fd)) {
+      send_success(ci);
       int res;
       char buf[size];
       
       if(read(ci.sock, buf, size) == -1) {
-      	//mynfs_error
+      	mynfs_error = 16;
       }
       
       if((res = mynfs_write(fd, buf, size)) != -1) {
       	printf("%d\n%d\n", res, size);
+      	
+      	if(write(ci.sock, &res, sizeof(int)) == -1) {
+      	  mynfs_error = 17;
+      	}
       }
-      //mynfs_write(fd);
+    } else {
+      send_failure(ci);
     }
   } else if(!strcmp(op, "mynfs_lseek")) {
     fd = atoi(strtok(NULL, " "));
@@ -259,67 +381,88 @@ void exec_operation(char *message, struct client_info ci) {
     int result, response;
 
     if(has_opened_file(ci, fd)) {
+      send_success(ci);
+      
       if((result = mynfs_lseek(fd, offset, whence)) != -1) {  
         if(write(ci.sock, &result, sizeof(int)) == -1) {
-//        	mynfs_error = ;
+        	mynfs_error = 18;
         }
         
       	if(read(ci.sock, &response, sizeof(int)) == -1) {
-      		//mynfs_error = ;
-      	}
-      	
-      	if(response == 0) {
-      		//mynfs_error = ;
-      	} else {
-      		printf("lseek OK\n");
+      		mynfs_error = 3;
       	}
       }
+    } else {
+      send_failure(ci);
     }
   } else if(!strcmp(op, "mynfs_unlink")) {
     char *filepath = strtok(NULL, " ");
+    
     if(has_access_to_file(ci, filepath, O_WRONLY)) {
-      if(mynfs_unlink(filepath) == 0) {
-	      send_success(ci);
+      send_success(ci);
+      int res = mynfs_unlink(filepath);
+      
+      if(write(ci.sock, &res, sizeof(int)) == -1) {
+        mynfs_error = 19;
       }
+    } else {
+      send_failure(ci);
     }
   } else if(!strcmp(op, "mynfs_fstat")) {
     fd = atoi(strtok(NULL, " "));
 
     if(has_opened_file(ci, fd)) {
-      if(mynfs_fstat(ci, fd) != -1) {
-        //send_success(ci);
-      }
+      send_success(ci);
+      mynfs_fstat(ci, fd);
+    } else {
+      send_failure(ci);
     }
   } else if(!strcmp(op, "mynfs_opendir")) {
     char *dirpath = strtok(NULL, " ");
 
     if(has_access_to_dir(ci, dirpath) && !has_opened_dir_by_path(ci, dirpath)) {
+      send_success(ci);
+    
       if((dd = mynfs_opendir(ci, dirpath)) != -1 && mynfs_error == 0) {
 	      add_opened_dir(ci, dd, dirpath);
-      } else {
-//        get_error();
       }
+    } else {
+      send_failure(ci);
     }
   } else if(!strcmp(op, "mynfs_closedir")) {
     dd = atoi(strtok(NULL, " "));
 
     if(has_opened_dir(ci, dd)) {
-      if(mynfs_closedir(dd) == 0) {
-        remove_opened_dir(ci, dd);
-        send_success(ci); // might break stuff?
-      } else {
-      	send_failure(ci); // might also break stuff?
+      send_success(ci);
+      int res = mynfs_closedir(dd);
+      
+      if(write(ci.sock, &res, sizeof(int)) == -1) {
+        mynfs_error = 20;
       }
+      
+      if(res == 0) {
+	      remove_opened_dir(ci, dd);
+      }
+    } else {
+      send_failure(ci);
     }
   } else if(!strcmp(op, "mynfs_readdir")) {
     dd = atoi(strtok(NULL, " "));
 
     if(has_opened_dir(ci, dd)) {
-      mynfs_readdir(dd);
+      send_success(ci);
+      mynfs_readdir(ci, dd);
+    } else {
+      send_failure(ci);
     }
   }
 }
 
+/*
+ * function: server_exec
+ *
+ * server execution main function; multiple clients management; printing opened files and directories
+ */
 void server_exec() {
   int max_sock, addrlen, num_clients_connected = 0, i, select_val;
   char buffer[1024];
@@ -407,11 +550,21 @@ void server_exec() {
       printf("Opened dir: %d %s; number of opened files: %d\n", opened_dirs_arr.opened_dirs[i].dir_descriptor, opened_dirs_arr.opened_dirs[i].client_ip, 
 	      opened_dirs_arr.num_opened_dirs);
     }
+    
+    if(mynfs_error != 0) {
+      print_error();
+      mynfs_error = 0;
+    }
   }
 
   server_close();
 }
 
+/*
+ * function: server_close
+ *
+ * server closing functions; closing sockets, freeing memory, closing files and directories
+ */
 void server_close() {
 	int i;
   close(server_sock);

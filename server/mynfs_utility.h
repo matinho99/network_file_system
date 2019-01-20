@@ -6,18 +6,18 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
 #include <time.h>
+#include <string.h>
 #include <errno.h>
 #include <arpa/inet.h>
 #include "mynfs_error.h"
 
 #define PORT 8080
 #define MAX_CLIENTS 10
-#define TIMEOUT_SEC 30
+#define TIMEOUT_SEC 60
 #define O_RDONLY 00
 #define O_WRONLY 01
 #define O_RDWR 02
@@ -26,17 +26,20 @@
 #define SEEK_CUR 1
 #define SEEK_END 2
 
+/* contains information about access a client has to specified place in the file system */
 struct mynfs_access {
   char client_ip[20];
   char path[50];
   int flags;
 };
 
+/* contains array of accesses */
 struct mynfs_access_array {
   struct mynfs_access *client_accesses;
   int size;
 } client_accesses_arr;
 
+/* contains information about clients' opened files */
 struct mynfs_opened_file {
   int file_descriptor;
   char filepath[50];
@@ -44,22 +47,26 @@ struct mynfs_opened_file {
   int flags;
 };
 
+/* contains array of opened files */
 struct mynfs_opened_file_array {
   struct mynfs_opened_file opened_files[100];
   int num_opened_files;
 } opened_files_arr;
 
+/* contains information about clients' opened directories */
 struct mynfs_opened_dir {
   int dir_descriptor;
   char dirpath[50];
   char client_ip[20];
 } opened_dirs[100];
 
+/* contains array of opened directories */
 struct mynfs_opened_dir_array {
   struct mynfs_opened_dir opened_dirs[100];
   int num_opened_dirs;
 } opened_dirs_arr;
 
+/* contains information about client - his socket and IP address */
 struct client_info {
   int sock;
   char ip[20];
@@ -96,7 +103,5 @@ int has_write_access(struct client_info ci, int fd);
 void send_success(struct client_info ci);
 
 void send_failure(struct client_info ci);
-
-void send_error(struct client_info ci);
 
 #endif
