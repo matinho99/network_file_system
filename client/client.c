@@ -2,26 +2,23 @@
 
 void help() {
   printf("Available commands:\n");
-  printf("mynfs_open <host> <path> <flags> <mode>\n");
-  printf("mynfs_read\n");
-  printf("mynfs_write <path to the local file>\n");
-  printf("mynfs_lseek <offset> <whence>\n");
-  printf("mynfs_close\n");
-  printf("mynfs_unlink <host> <path>\n");
-  printf("mynfs_opendir <host> <path>\n");
-  printf("mynfs_readdir\n");
-  printf("mynfs_closedir\n");
-  printf("mynfs_fstat\n");
+  printf("mynfs_open <path> <flags> <mode>\n");
+  printf("mynfs_read <fd> <path to local file> <n>\n");
+  printf("mynfs_write <path to the local file> <fd> <n>\n");
+  printf("mynfs_lseek <fd> <offset> <whence>\n");
+  printf("mynfs_close <fd>\n");
+  printf("mynfs_unlink <path>\n");
+  printf("mynfs_opendir <path>\n");
+  printf("mynfs_readdir <dd>\n");
+  printf("mynfs_closedir <dd>\n");
+  printf("mynfs_fstat <fd>\n");
+  printf("list_all\n");
 }
 
 int mynfs_open(char *arg) {
-/*
-send com+arg
-recv response
-*/
   char com[50] = "mynfs_open ";
-  char buf[1024];
-  int fd, success = 1;
+  char buf[1024], *path;
+  int fd, flags,success = 1;
   strcat(com, arg);
 
   if(write(sock, com, 1024) == -1) {
@@ -36,6 +33,9 @@ recv response
   
   if(fd != -1) {
   	write(sock, &success, sizeof(int));
+  	path = strtok(arg, " ");
+  	flags = atoi(strtok(arg, " "));
+  	add_opened_file(fd, path, flags);
   }
   
   printf("mynfs_open issued\n");
@@ -45,7 +45,7 @@ recv response
 int mynfs_close(char *arg) {
   char com[50] = "mynfs_close ";
   strcat(com, arg);
-  int response, result = 0;
+  int response, fd, result = 0;
   
   if(write(sock, com, 1024) == -1) {
   	//mynfs_error = 3;
@@ -62,15 +62,13 @@ int mynfs_close(char *arg) {
   	//mynfs_error = 5;
   }
   
+  fd = atoi(arg);
+  remove_opened_file(fd);
   printf("mynfs_close issued\n");
   return result;
 }
 
 int mynfs_read(char *arg) {
-/*
-send com
-recv buf to read
-*/
   printf("mynfs_read issued\n");
   char com[64] = "mynfs_read ";
   char buf[1024];
@@ -110,10 +108,6 @@ recv buf to read
 }
 
 int mynfs_write(char *arg) {
-/*
-send com+arg+buf
-recv response
-*/
   char com[64] = "mynfs_write ";
   char buf[1024];
   char *path, *fd, sn[1024];
@@ -170,10 +164,6 @@ int mynfs_lseek(char *arg) {
 }
 
 int mynfs_unlink(char *arg) {
-/*
-send com+arg
-recv response
-*/
 	int response, result = -1;
   char com[50] = "mynfs_unlink ";
   strcat(com, arg);
@@ -192,10 +182,6 @@ recv response
 }
 
 int mynfs_fstat(char *arg) {
-/*
-send com
-recv buf with stats
-*/
   char com[50] = "mynfs_fstat ";
   strcat(com, arg);
   write(sock, com, 1024);
@@ -204,10 +190,6 @@ recv buf with stats
 }
 
 int mynfs_opendir(char *arg) {
-/*
-send com+arg
-recv response
-*/
 	int dd, success = 1;
   char com[50] = "mynfs_opendir ";
   strcat(com, arg);
@@ -224,17 +206,14 @@ recv response
   
   if(dd != -1) {
   	write(sock, &success, sizeof(int));
+  	add_opened_dir(dd, arg);
   }
   
   return dd;
 }
 
 int mynfs_closedir(char *arg) {
-/*
-send com
-recv response
-*/
-	int response, result = 0;
+	int response, dd,result = 0;
   char com[50] = "mynfs_closedir ";
   strcat(com, arg);
   
@@ -253,57 +232,18 @@ recv response
   	//mynfs_error = 5;
   }
   
+  dd = atoi(arg);
+  remove_opened_dir(dd);
   printf("mynfs_closedir issued\n");
   return result;
 }
 
 int mynfs_readdir(char *arg) {
-/*
-send com
-recv buf
-*/
   char com[50] = "mynfs_readdir ";
   strcat(com, arg);
   write(sock, com, 1024);
   printf("mynfs_readdir issued\n");
   return 1;
-}
-
-void init_client_socket(char *host, char *port) {
-  struct sockaddr_in server;
-  struct hostent *hp, *gethostbyname();
-  char buf[1024], *check;
-
-  /* Create socket */
-  sock = socket(AF_INET, SOCK_STREAM, 0);
-  if(sock == -1) {
-    perror("opening stream socket");
-    exit(1);
-  }
-
-/*  check = strtok(host, ".");
-  if(check == NULL) {
-*/
-    /* Get the IP address from hostname */
-/*    hp = gethostbyname(host);
-
-    if(hp == (struct hostent *) 0) {
-      fprintf(stderr, "%s: unknown host\n", host);
-      exit(2);
-    }
-    memcpy((char *) &server.sin_addr, (char *) hp->h_addr, hp->h_length);
-  } else {*/
-    server.sin_addr.s_addr = inet_addr(host);
-//  }
-  server.sin_family = AF_INET;
-  server.sin_port = htons(atoi(port));
-
-  if(connect(sock, (struct sockaddr *) &server, sizeof server) == -1) {
-    perror("connecting stream socket");
-    exit(1);
-  }
-
-  printf("Type \"help\" to list available commands\n");
 }
 
 void client_exec() {
@@ -344,6 +284,8 @@ void client_exec() {
       res = mynfs_closedir(arg);
     if(!strcmp(com, "mynfs_fstat"))
       res = mynfs_fstat(arg);
+    if(!strcmp(com, "list_all"))
+      list_all();
     if(!strcmp(com, "close"))
       break;
   }

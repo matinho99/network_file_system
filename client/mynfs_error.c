@@ -1,6 +1,6 @@
 #include "mynfs_error.h"
 
-char *mynfs_error(int err_no) {
+char *get_error() {
 /*
   char *message;
 

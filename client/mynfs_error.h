@@ -3,6 +3,6 @@
 
 int mynfs_error;
 
-char *get_error_message(int err_no);
+char *get_error();
 
 #endif

@@ -3,8 +3,6 @@
 
 #include "mynfs_utility.h"
 
-int sock;
-
 void help();
 
 int mynfs_open(char *arg);
@@ -26,8 +24,6 @@ int mynfs_opendir(char *arg);
 int mynfs_closedir(char *arg);
 
 int mynfs_readdir(char *arg);
-
-void init_client_socket(char *host, char *port);
 
 void client_exec();
 
