@@ -18,7 +18,7 @@ int mynfs_lseek(int fd, int offset, int whence);
 
 int mynfs_unlink(char *path);
 
-int mynfs_fstat(int fd);
+int mynfs_fstat(struct client_info ci, int fd);
 
 int mynfs_opendir(struct client_info ci, char *path);
 

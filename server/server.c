@@ -87,7 +87,7 @@ int mynfs_unlink(char *path) {
   return result;
 }
 
-int mynfs_fstat(int fd) {
+int mynfs_fstat(struct client_info ci, int fd) {
   printf("mynfs_fstat %d\n", fd);
   int result;
   struct stat buf;
@@ -98,6 +98,20 @@ int mynfs_fstat(int fd) {
     printf("st_dev %d; st_ino %d; st_uid %d; st_size %d; st_atime %d\n", buf.st_dev, buf.st_ino, 
       buf.st_uid, buf.st_size, buf.st_atime);
   }
+  
+  write(ci.sock, &buf.st_dev, sizeof(dev_t));
+  write(ci.sock, &buf.st_ino, sizeof(ino_t));
+  write(ci.sock, &buf.st_mode, sizeof(mode_t));
+  write(ci.sock, &buf.st_nlink, sizeof(nlink_t));
+  write(ci.sock, &buf.st_uid, sizeof(uid_t));
+  write(ci.sock, &buf.st_gid, sizeof(gid_t));
+  write(ci.sock, &buf.st_rdev, sizeof(dev_t));
+  write(ci.sock, &buf.st_size, sizeof(off_t));
+  write(ci.sock, &buf.st_blksize, sizeof(blksize_t));
+  write(ci.sock, &buf.st_blocks, sizeof(blkcnt_t));
+  write(ci.sock, &buf.st_atime, sizeof(time_t));
+  write(ci.sock, &buf.st_mtime, sizeof(time_t));
+  write(ci.sock, &buf.st_ctime, sizeof(time_t));
   
   return result;
 }
@@ -272,8 +286,8 @@ void exec_operation(char *message, struct client_info ci) {
     fd = atoi(strtok(NULL, " "));
 
     if(has_opened_file(ci, fd)) {
-      if(mynfs_fstat(fd) != -1) {
-        send_success(ci);
+      if(mynfs_fstat(ci, fd) != -1) {
+        //send_success(ci);
       }
     }
   } else if(!strcmp(op, "mynfs_opendir")) {
@@ -292,9 +306,9 @@ void exec_operation(char *message, struct client_info ci) {
     if(has_opened_dir(ci, dd)) {
       if(mynfs_closedir(dd) == 0) {
         remove_opened_dir(ci, dd);
-        send_success(ci);
+        send_success(ci); // might break stuff?
       } else {
-      	send_failure(ci);
+      	send_failure(ci); // might also break stuff?
       }
     }
   } else if(!strcmp(op, "mynfs_readdir")) {
