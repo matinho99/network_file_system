@@ -58,4 +58,8 @@ void remove_opened_dir(int dd);
 
 void list_all();
 
+void send_success();
+
+void send_failure();
+
 #endif

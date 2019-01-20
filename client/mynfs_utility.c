@@ -117,3 +117,19 @@ void list_all() {
     printf("none\n");
   }
 }
+
+void send_success() {
+  int success = 1;
+
+  if(write(sock, &success, sizeof(int)) == -1) {
+    perror("send_success failed");
+  }
+}
+
+void send_failure() {
+  int failure = 0;
+
+  if(write(sock, &failure, sizeof(int)) == -1) {
+    perror("send_failure failed");
+  }
+}

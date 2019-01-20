@@ -30,9 +30,9 @@ int mynfs_open(char *arg) {
   }
   
   printf("fd %d\n", fd);
+  send_success();
   
   if(fd != -1) {
-  	write(sock, &success, sizeof(int));
   	path = strtok(arg, " ");
   	flags = atoi(strtok(arg, " "));
   	add_opened_file(fd, path, flags);
@@ -84,7 +84,7 @@ int mynfs_read(char *arg) {
   
   if(local_fd == -1) {
     mynfs_error = 6;
-    return 0;
+    return -1;
   }
 
   strcat(com, fd);
@@ -101,10 +101,10 @@ int mynfs_read(char *arg) {
   if(write(local_fd, buf, n) == -1) {
     printf("wot\n");
     mynfs_error = 8;
-    return 0;
+    return -1;
   }
   
-  return 1;
+  return n;
 }
 
 int mynfs_write(char *arg) {
@@ -121,7 +121,7 @@ int mynfs_write(char *arg) {
   
   if(local_fd == -1) {
     mynfs_error = 7;
-    return 0;
+    return -1;
   }
   
   n = read(local_fd, buf, size);
@@ -136,7 +136,7 @@ int mynfs_write(char *arg) {
   printf("sent\n");
 
   write(sock, buf, n);
-  return 1;
+  return n;
 }
 
 int mynfs_lseek(char *arg) {
@@ -150,13 +150,9 @@ int mynfs_lseek(char *arg) {
   }
   
   if(read(sock, &result, sizeof(int)) == -1) {
-  	//mynfs_error = ;
+  	send_failure();
   } else {
-  	response = 1;
-  }
-  
-  if(write(sock, &response, sizeof(int)) == -1) {
-  	//mynfs_error = ;
+  	send_success();
   }
   
   printf("lseek result = %d\n", result);  
@@ -220,7 +216,7 @@ int mynfs_fstat(char *arg) {
 }
 
 int mynfs_opendir(char *arg) {
-	int dd, success = 1;
+	int dd;
   char com[64] = "mynfs_opendir ";
   strcat(com, arg);
   
@@ -235,8 +231,10 @@ int mynfs_opendir(char *arg) {
   printf("dd %d\n", dd);
   
   if(dd != -1) {
-  	write(sock, &success, sizeof(int));
+  	send_success();
   	add_opened_dir(dd, arg);
+  } else {
+    send_failure();
   }
   
   return dd;
@@ -270,8 +268,25 @@ int mynfs_closedir(char *arg) {
 
 int mynfs_readdir(char *arg) {
   char com[64] = "mynfs_readdir ";
+  char buf[1024], val[64];
   strcat(com, arg);
   write(sock, com, 1024);
+  read(sock, buf, 1024);  
+  send_success();
+  printf("readdir result:\n");
+  strcpy(val, strtok(buf, "/"));
+  
+  while(1) {
+    printf("->%s\n", val);
+    char *tmp = strtok(NULL, "/");
+    
+    if(tmp == NULL) {
+      break;
+    }
+    
+    strcpy(val, tmp);
+  }
+  
   printf("mynfs_readdir issued\n");
   return 1;
 }
@@ -318,6 +333,8 @@ void client_exec() {
       list_all();
     if(!strcmp(com, "close"))
       break;
+      
+    list_all();
   }
   close(sock);
 }
