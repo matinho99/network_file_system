@@ -5,7 +5,7 @@
  *
  * prints specific error depending on the value of mynfs_error
  */
-void get_error() {
+void print_error() {
   printf("ERROR: ");
   
   switch(mynfs_error) {

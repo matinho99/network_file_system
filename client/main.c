@@ -175,6 +175,11 @@ void client_exec() {
     } if(!strcmp(com, "close")) {
       break;
     }
+    
+    if(mynfs_error != 0) {
+      print_error();
+      mynfs_error = 0;
+    }
   }
   close(sock);
 }

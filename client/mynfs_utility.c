@@ -10,30 +10,13 @@
  */
 void init_client_socket(char *host, char *port) {
   struct sockaddr_in server;
-  //struct hostent *hp, *gethostbyname();
-  //char buf[1024], *check;
-
-  /* Create socket */
   sock = socket(AF_INET, SOCK_STREAM, 0);
   if(sock == -1) {
     perror("opening stream socket");
     exit(1);
   }
-
-/*  check = strtok(host, ".");
-  if(check == NULL) {
-*/
-    /* Get the IP address from hostname */
-/*    hp = gethostbyname(host);
-
-    if(hp == (struct hostent *) 0) {
-      fprintf(stderr, "%s: unknown host\n", host);
-      exit(2);
-    }
-    memcpy((char *) &server.sin_addr, (char *) hp->h_addr, hp->h_length);
-  } else {*/
-    server.sin_addr.s_addr = inet_addr(host);
-//  }
+  
+  server.sin_addr.s_addr = inet_addr(host);
   server.sin_family = AF_INET;
   server.sin_port = htons(atoi(port));
 

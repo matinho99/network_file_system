@@ -5,6 +5,6 @@
 
 int mynfs_error; /* global error variable */
 
-void get_error();
+void print_error();
 
 #endif
