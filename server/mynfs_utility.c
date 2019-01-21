@@ -47,15 +47,12 @@ void load_client_accesses() {
     if (c == '\n')
       count++;
 
-  printf("count = %d\n", count);
   client_accesses_arr.client_accesses = (struct mynfs_access *)malloc(count*sizeof(struct mynfs_access));
-  printf("number of client accesses added: %d\n", (int)(sizeof(client_accesses_arr.client_accesses)/sizeof(struct mynfs_access)));
   fseek(f, 0, SEEK_SET);
   i = 0;
 
   while(getline(&buf, (size_t *)&len, f) != -1) {
     char *flags;
-    printf("retrieved line: %s", buf);
     char *str = strtok(buf, "\n");
     strcpy(client_accesses_arr.client_accesses[i].client_ip, strtok(str, ";"));
     strcpy(client_accesses_arr.client_accesses[i].path, strtok(NULL, ";"));
@@ -73,11 +70,6 @@ void load_client_accesses() {
     i++;
   }
 
-  for(i=0; i<client_accesses_arr.size; i++) {
-    printf("%s %s %d\n", client_accesses_arr.client_accesses[i].client_ip, 
-      client_accesses_arr.client_accesses[i].path, client_accesses_arr.client_accesses[i].flags);
-  }
-
   if(buf != NULL) free(buf);
   fclose(f);
 }
@@ -93,7 +85,6 @@ void load_client_accesses() {
  * flags - flags the file was opened with
  */
 void add_opened_file(struct client_info ci, int fd, char *path, int flags) {
-	printf("add_opened_file\n");
   opened_files_arr.opened_files[opened_files_arr.num_opened_files].file_descriptor = fd;
   strcpy(opened_files_arr.opened_files[opened_files_arr.num_opened_files].filepath, path);
   strcpy(opened_files_arr.opened_files[opened_files_arr.num_opened_files].client_ip, ci.ip);
@@ -181,6 +172,33 @@ void remove_opened_dir(struct client_info ci, int dd) {
 
       opened_dirs_arr.num_opened_dirs--;
       break;
+    }
+  }
+}
+
+/*
+ * function: delete_client_entries
+ *
+ * deletes all client's opened files and directories
+ *
+ * ci - client information
+ */
+void delete_client_entries(struct client_info ci) {
+  int i;
+  
+  for(i = 0; i < opened_files_arr.num_opened_files;) {
+    if(!strcmp(opened_files_arr.opened_files[i].client_ip, ci.ip)) {
+      remove_opened_file(ci, opened_files_arr.opened_files[i].file_descriptor);
+    } else {
+      i++;
+    }
+  }
+  
+  for(i = 0; i < opened_dirs_arr.num_opened_dirs;) {
+    if(!strcmp(opened_dirs_arr.opened_dirs[i].client_ip, ci.ip)) {
+      remove_opened_dir(ci, opened_dirs_arr.opened_dirs[i].dir_descriptor);
+    } else {
+      i++;
     }
   }
 }

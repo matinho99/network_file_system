@@ -85,6 +85,8 @@ void add_opened_dir(struct client_info ci, int dd, char *path);
 
 void remove_opened_dir(struct client_info ci, int dd);
 
+void delete_client_entries(struct client_info ci);
+
 int has_access_to_dir(struct client_info ci, char *dp);
 
 int has_access_to_file(struct client_info ci, char *fp, int mode);

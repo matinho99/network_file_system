@@ -269,7 +269,7 @@ int mynfs_readdir(struct client_info ci, int dd) {
   }
   
   rewinddir(dir_p);
-  
+  printf("buf before write: %s\n", buf);
   if(write(ci.sock, buf, 1024) == -1) {
     mynfs_error = 2;
   }
@@ -473,6 +473,12 @@ void server_exec() {
   load_client_accesses();
   listen(server_sock, 5);
   max_sock = server_sock;
+  printf("CLIENTS ACCESSES: \n");
+  
+  for(i=0; i<client_accesses_arr.size; i++) {
+    printf("%s %s %d\n", client_accesses_arr.client_accesses[i].client_ip, 
+      client_accesses_arr.client_accesses[i].path, client_accesses_arr.client_accesses[i].flags);
+  }
 
   while(1) {
     FD_ZERO(&readfds);     
@@ -529,6 +535,7 @@ void server_exec() {
 	        //send_success(client_sockets[i]);
         } else if(num_bytes_read == 0) {
           printf("host disconnected\n");
+          delete_client_entries(client_sockets[i]);
 	        client_sockets[i].sock = 0;
           close(sock);
 					num_clients_connected--;          
