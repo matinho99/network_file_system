@@ -3,8 +3,6 @@
 
 #include "mynfs_utility.h"
 
-void help();
-
 int mynfs_open(char *path, int flags, int mode);
 
 int mynfs_close(int fd);
@@ -23,8 +21,6 @@ int mynfs_opendir(char *path);
 
 int mynfs_closedir(int dd);
 
-int mynfs_readdir(int dd);
-
-void client_exec();
+int mynfs_readdir(int dd, char *buf);
 
 #endif

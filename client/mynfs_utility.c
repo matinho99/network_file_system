@@ -1,5 +1,13 @@
 #include "mynfs_utility.h"
 
+/*
+ * function: init_client_socket
+ *
+ * initializes global socket sock
+ *
+ * host - IP address of the server
+ * port - port to connect to the server on
+ */
 void init_client_socket(char *host, char *port) {
   struct sockaddr_in server;
   //struct hostent *hp, *gethostbyname();
@@ -37,6 +45,15 @@ void init_client_socket(char *host, char *port) {
   printf("Type \"help\" to list available commands\n");
 }
 
+/*
+ * function: add_opened_file
+ *
+ * adds new opened file on the server to opened_files_arr
+ *
+ * fd - server file descriptor
+ * path - server file path
+ * flags - flags the file was opened with
+ */
 void add_opened_file(int fd, char *path, int flags) {
 	printf("add_opened_file\n");
   opened_files_arr.opened_files[opened_files_arr.num_opened_files].file_descriptor = fd;
@@ -45,6 +62,13 @@ void add_opened_file(int fd, char *path, int flags) {
   opened_files_arr.num_opened_files++;
 }
 
+/*
+ * function: remove_opened_file
+ *
+ * removes record specified by fd from opened_files_arr
+ *
+ * fd - server file descriptor
+ */
 void remove_opened_file(int fd) {
   int i;
 
@@ -68,12 +92,27 @@ void remove_opened_file(int fd) {
   }
 }
 
+/*
+ * function: add_opened_dir
+ *
+ * adds new opened dir on the server to the opened_dirs_arr
+ *
+ * dd - server directory descriptor
+ * path - path to the directory on the server
+ */
 void add_opened_dir(int dd, char *path) {
   opened_dirs_arr.opened_dirs[opened_dirs_arr.num_opened_dirs].dir_descriptor = dd;
   strcpy(opened_dirs_arr.opened_dirs[opened_dirs_arr.num_opened_dirs].dirpath, path);
   opened_dirs_arr.num_opened_dirs++;
 }
 
+/*
+ * function: remove_opened_dir
+ *
+ * removes record specified by dd from the opened_dir_arr
+ *
+ * dd - server directory descriptor
+ */
 void remove_opened_dir(int dd) {
   int i;
 
@@ -95,6 +134,11 @@ void remove_opened_dir(int dd) {
   }
 }
 
+/*
+ * function: list_all
+ *
+ * lists all opened files and directories on the server
+ */
 void list_all() {
   printf("\nOpened files: \n");
   if(opened_files_arr.num_opened_files > 0) {
@@ -117,6 +161,7 @@ void list_all() {
     printf("none\n");
   }
 }
+
 
 void send_success() {
   int success = 1;

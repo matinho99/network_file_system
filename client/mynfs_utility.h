@@ -7,7 +7,6 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
@@ -23,24 +22,28 @@
 #define SEEK_END 2
 
 
-int sock;
+int sock; /* global socket connecting to the server */
 
+/* contains information about an opened file on the server */
 struct mynfs_opened_file {
   int file_descriptor;
   char filepath[50];
   int flags;
 };
 
+/* contains array of opened files */
 struct mynfs_opened_file_array {
   struct mynfs_opened_file opened_files[100];
   int num_opened_files;
 } opened_files_arr;
 
+/* contains information about an opened dir on the server */
 struct mynfs_opened_dir {
   int dir_descriptor;
   char dirpath[50];
 } opened_dirs[100];
 
+/* contains array of opened dirs */
 struct mynfs_opened_dir_array {
   struct mynfs_opened_dir opened_dirs[100];
   int num_opened_dirs;
