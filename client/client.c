@@ -30,7 +30,7 @@ int mynfs_open(char *path, int flags, int mode) {
   strcat(com, smode);
 
   if(write(sock, com, 1024) == -1) {
-  	//mynfs_error = 1;
+  	mynfs_error = 1;
   }
   
   int resp;
@@ -340,7 +340,7 @@ int mynfs_readdir(int dd) {
   read(sock, buf, 1024);  
   send_success();
   
-  if(strcmp(buf, "")) {
+  if(!strcmp(buf, "")) {
     return -1;
   }
   
@@ -366,6 +366,7 @@ void client_exec() {
   while(1) {
     int n = 64;
     char *str, getstr[n], *com, *arg;
+    printf(">");
     str = fgets(getstr, n, stdin);
     // if(str == NULL)
 
@@ -381,12 +382,23 @@ void client_exec() {
     if(!strcmp(com, "help")) {
       help();
     } else if(!strcmp(com, "mynfs_open")) {
-      char *path;
+      char *path, *sflags, *smode;
       int flags, mode;
       
       path = strtok(arg, " ");
-      flags = atoi(strtok(NULL, " "));
-      mode = atoi(strtok(NULL, " "));
+      sflags = strtok(NULL, " ");
+      smode = strtok(NULL, " ");
+      if(smode != NULL) {
+        mode = atoi(smode);
+      } else {
+        mode = 0;
+      }
+      if(!strcmp(sflags, "O_RDONLY")) flags = O_RDONLY;
+      else if(!strcmp(sflags, "O_WRONLY")) flags = O_WRONLY;
+      else if(!strcmp(sflags, "O_RDWR")) flags = O_RDWR;
+      if(!strcmp(sflags, "O_RDONLY|O_CREAT")) flags = (O_RDONLY|O_CREAT);
+      else if(!strcmp(sflags, "O_WRONLY|O_CREAT")) flags = (O_WRONLY|O_CREAT);
+      else if(!strcmp(sflags, "O_RDWR|O_CREAT")) flags = (O_RDWR|O_CREAT);
       
       res = mynfs_open(path, flags, mode);
     } else if(!strcmp(com, "mynfs_read")) {
@@ -487,8 +499,6 @@ void client_exec() {
     } if(!strcmp(com, "close")) {
       break;
     }
-      
-    list_all();
   }
   close(sock);
 }
