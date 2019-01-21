@@ -16,7 +16,7 @@ int mynfs_open(struct client_info ci, char *path, int flags, int mode) {
   printf("mynfs_open %s %s %d %d\n", ci.ip, path, flags, mode);
   int fd, response;
 
-  if(flags == O_CREAT|O_RDONLY || flags == O_CREAT|O_WRONLY || flags == O_CREAT|O_RDWR) {
+  if(flags == (O_CREAT|O_RDONLY) || flags == (O_CREAT|O_WRONLY) || flags == (O_CREAT|O_RDWR)) {
     fd = open(path, flags, 00700);
   } else {
     fd = open(path, flags);
@@ -162,9 +162,10 @@ int mynfs_fstat(struct client_info ci, int fd) {
   
   if((result = fstat(fd, &buf)) == -1) {
     mynfs_error = 9;
+    send_failure(ci);
+    return result;
   } else {
-    printf("st_dev %d; st_ino %d; st_uid %d; st_size %d; st_atime %d\n", buf.st_dev, buf.st_ino, 
-      buf.st_uid, buf.st_size, buf.st_atime);
+    send_success(ci);
   }
   
   write(ci.sock, &buf.st_dev, sizeof(dev_t));
@@ -195,8 +196,7 @@ int mynfs_fstat(struct client_info ci, int fd) {
  */
 int mynfs_opendir(struct client_info ci, char *path) {
   printf("mynfs_opendir %s %s\n", ci.ip, path);
-  DIR *dir_p;  // might need to be global
-  char buf[1024];
+  DIR *dir_p;
   int response, dd = -1;
   dir_p = opendir(path);
 
@@ -269,7 +269,6 @@ int mynfs_readdir(struct client_info ci, int dd) {
   }
   
   rewinddir(dir_p);
-  printf("buf after readdir: %s\n", buf);
   
   if(write(ci.sock, buf, 1024) == -1) {
     mynfs_error = 2;
@@ -502,7 +501,7 @@ void server_exec() {
 
       if((new_sock = accept(server_sock, (struct sockaddr *)&addr, (socklen_t*)&addrlen)) < 0) {   
         perror("accept failed");  
-        server_close; 
+        server_close(); 
         exit(0); 
       }
 
