@@ -1,21 +1,21 @@
 CFLAGS= -g -c -Wall
 
-all: clean hello clean_o
+all: clean lib hello clean_o
 
-hello: main.o client.o mynfs_error.o mynfs_utility.o
-	gcc main.o client.o mynfs_error.o mynfs_utility.o -o client
+lib: client.o mynfs_utility.o mynfs_error.o
+	ar rcs libmynfsclient.a client.o mynfs_utility.o mynfs_error.o
+	
+hello:
+	gcc -o client main.c -L. -lmynfsclient
 
-mynfs_utility.o: mynfs_utility.c
+mynfs_utility.o:
 	gcc $(CFLAGS) mynfs_utility.c
 
-mynfs_error.o: mynfs_error.c
+mynfs_error.o:
 	gcc $(CFLAGS) mynfs_error.c
 
-client.o: client.c
+client.o:
 	gcc $(CFLAGS) client.c
-
-main.o: main.c
-	gcc $(CFLAGS) main.c
 
 clean_o:
 	rm -rf *.o
