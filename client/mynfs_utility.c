@@ -2,8 +2,8 @@
 
 void init_client_socket(char *host, char *port) {
   struct sockaddr_in server;
-  struct hostent *hp, *gethostbyname();
-  char buf[1024], *check;
+  //struct hostent *hp, *gethostbyname();
+  //char buf[1024], *check;
 
   /* Create socket */
   sock = socket(AF_INET, SOCK_STREAM, 0);

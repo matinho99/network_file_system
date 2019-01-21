@@ -5,25 +5,25 @@
 
 void help();
 
-int mynfs_open(char *arg);
+int mynfs_open(char *path, int flags, int mode);
 
-int mynfs_close(char *arg);
+int mynfs_close(int fd);
 
-int mynfs_read(char *arg);
+ssize_t mynfs_read(int fd, void *buf, size_t size);
 
-int mynfs_write(char *arg);
+ssize_t mynfs_write(int fd, const void *buf, size_t count);
 
-int mynfs_lseek(char *arg);
+off_t mynfs_lseek(int fd, off_t offset, int whence);
 
-int mynfs_unlink(char *arg);
+int mynfs_unlink(char *path);
 
-int mynfs_fstat(char *arg);
+int mynfs_fstat(int fd, struct stat *buf);
 
-int mynfs_opendir(char *arg);
+int mynfs_opendir(char *path);
 
-int mynfs_closedir(char *arg);
+int mynfs_closedir(int dd);
 
-int mynfs_readdir(char *arg);
+int mynfs_readdir(int dd);
 
 void client_exec();
 
